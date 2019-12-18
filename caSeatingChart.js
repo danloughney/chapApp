@@ -1,0 +1,105 @@
+/*
+* Copyright 2019 SpookyGroup LLC. All rights reserved.
+*/
+const maxRowsPerBus = 30;
+
+function formatMember(contact) {
+    return "<a href='%s'>%s, %s</a><br>%s".format(
+        memberHome(contact.Id), 
+        contact.LastName, contact.FirstName, contact.MembershipLevel.Name
+    );
+}
+
+function clearAllCells() {
+    for (var i = maxRowsPerBus; i > 0; i--) {
+        var rowNumber = '%s'.format(i).padStart(2, '0');
+        document.getElementById(rowNumber + 'A').innerHTML = '';
+        document.getElementById(rowNumber + 'B').innerHTML = '';
+        document.getElementById(rowNumber + 'C').innerHTML = '';
+        document.getElementById(rowNumber + 'D').innerHTML = '';
+    }
+}
+
+function onChangeBusNumber() {
+    var busNumber = document.querySelector('input[name="busNumber"]:checked').value;
+    setCookie('busNumber', busNumber, 1);
+
+    clearAllCells();
+    executeQuery(busNumber);
+}
+
+function executeQuery(busNumber) {
+
+    search = searches[$.listName];
+
+    $.api.apiRequest({
+        apiUrl: $.api.apiUrls.contacts(
+            { 
+            '$filter' : "'Status' eq 'Active' AND 'TripBusNumber' eq '%s'".format(busNumber),
+            //'$select' : "'Status', 'TripBusNumber', 'TripBusSeat', 'Id', 'LastName', 'FirstName'",
+            }),
+        success: function (data, textStatus, jqXhr) {
+            var resultCount = 0;
+            var contacts = data.Contacts;
+            
+            contacts.sort(search.sorter || { } );
+
+            for (var i = 0; i < contacts.length; i++) {
+                resultCount ++;
+                document.getElementById(fieldValue(contacts[i], TripBusSeat)).innerHTML = formatMember(contacts[i]);
+            }
+            
+            document.getElementById('listCount').innerHTML = '%s Seat%s in Use'.format(resultCount, resultCount == 1 ? '' : 's');
+        },
+        error: function (data, textStatus, jqXhr) {
+            ;
+        }
+    });
+}
+
+function renderRow(rowType, rowNumber, className) {
+    return '<tr align="center"> \
+        <th align="center" width="5%">%s</th> \
+        <%s class="%s" width="20%" id="%s"></%s> \
+        <%s class="%s" width="20%" id="%s"></%s> \
+        <%s width="5%">&nbsp;</%s> \
+        <%s class="%s" width="20%" id="%s"></%s> \
+        <%s class="%s" width="20%" id="%s"></%s> \
+        </tr>'.format(
+            rowNumber, 
+            rowType, className, rowNumber+'D', rowType, 
+            rowType, className, rowNumber+'C', rowType, 
+            rowType, rowType,
+            rowType, className, rowNumber+'B', rowType, 
+            rowType, className, rowNumber+'A', rowType);
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+    $.listName = 'Bus Report';
+
+    // read the bus number from the cookie
+    var busNumber = getCookie('busNumber') || '1';
+    var cell = document.getElementById('busNumber'+busNumber);
+    cell.checked = true;
+
+    // create the table
+    var html = renderRow('th', '', '');
+
+    for (var i = maxRowsPerBus; i > 0; i--) {
+        var rowNumber = '%s'.format(i).padStart(2, '0');
+        html += renderRow('td', rowNumber, 'chartTable');
+    }
+    document.getElementById('busChart').innerHTML = html;
+
+    document.getElementById('A').innerHTML = 'A';
+    document.getElementById('B').innerHTML = 'B';
+    document.getElementById('C').innerHTML = 'C';
+    document.getElementById('D').innerHTML = 'D';
+
+    // fill table with data
+    $.api = new WApublicApi(FLSCclientID);
+    $.when($.api.init()).done(function() {
+        executeQuery(busNumber);
+        return false;
+    });
+});

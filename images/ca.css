@@ -1,0 +1,174 @@
+.btn {
+  background-color: #2b475b; /* Blue background */
+  border: none; /* Remove borders */
+  color: white; /* White text */
+  font-size: 18px; /* Set a font size */
+  cursor: pointer; /* Mouse pointer on hover */
+  border-radius: 4px;
+  height: 2em;
+  width: 6.5em;
+  text-align: center;
+  margin: auto;
+  }
+
+.btnInactive {
+  background-color: lightgray; /* Blue background */
+  border: none; /* Remove borders */
+  color: white; /* White text */
+  font-size: 18px; /* Set a font size */
+  cursor: pointer; /* Mouse pointer on hover */
+  border-radius: 4px;
+  height: 2em;
+  width: 6.5em;
+  text-align: center;
+  margin: auto;
+}
+
+  
+.btnRed {
+    background-color:#f44336; /* Red background */
+    border: none; /* Remove borders */
+    color: white; /* White text */
+    font-size: 18px; /* Set a font size */
+    cursor: pointer; /* Mouse pointer on hover */
+    border-radius: 4px;
+    height: 2em;
+    width: 6.5em;
+    text-align: center;
+    margin: auto;
+}
+
+.btnCancel {
+    background-color:#6b6666; /* Red background */
+    border: none; /* Remove borders */
+    color: white; /* White text */
+    font-size: 18px; /* Set a font size */
+    cursor: pointer; /* Mouse pointer on hover */
+    border-radius: 4px;
+    height: 2em;
+    width: 6.5em;
+    text-align: center;
+    margin: auto;
+}
+
+    /* Darker background on mouse-over */
+.btn:hover {
+  background-color: #1b3445;
+}
+
+.btnRed:hover {
+  background-color: #690c05;  
+}
+
+.labelBad {
+  font-size: 20px;
+  color: #f44336;
+  font-weight: bold;
+}
+
+.normalText { 
+  font-size: 20px;
+  color: black;
+  vertical-align: top;
+}
+
+.qrcode-text-btn {
+  display: inline-block;
+  height: 3em;
+  width: 3em;
+  background: url(qrIcon.svg) 50% 50% no-repeat;
+  cursor: pointer;
+}
+
+.home-btn {
+  display: inline-block;
+  height: 2.8em;
+  width: 3em;
+  background: url(home.svg) 50% 50% no-repeat;
+  cursor: pointer;
+}
+
+.firstAid-btn {
+  display: inline-block;
+  height: 3em;
+  width: 3em;
+  background: url(firstAid.svg) 50% 50% no-repeat;
+  cursor: pointer;
+}
+
+.qrcode-text-btn > input[type=file] {
+  position: absolute;
+  overflow: hidden;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.qrcode-text {
+  padding-right: 1.7em;
+  margin-right: 0;
+  vertical-align: middle;
+}
+
+.qrcode-text + .qrcode-text-btn {
+  width: 1.7em;
+  margin-left: -1.7em;
+  vertical-align: middle;
+}
+
+.buttonGroups {
+  border-spacing: 10px;
+  border: 1px solid black;
+  border-radius: 4px;
+}
+
+.imageFrame {
+  border-spacing: 10px;
+  border: 1px;
+  border-radius: 2%;
+  align-content: center;
+}
+
+img {
+  border-radius: 2%;
+}
+
+textarea {
+  resize: none;
+  overflow: hidden;
+  min-height: 50px;
+  max-height: 100px;
+}
+
+.radioButton {
+  padding:1em;
+  width:4em;
+  height:4em;  
+  border: 0px;
+  width: 100%;
+}
+
+legend {
+  padding: 3px 6px;
+}
+
+input {
+  margin: .4rem;
+}
+
+fieldset {
+  border-color: #cfcdcc;
+}
+
+table, td {
+  border-color: #cfcdcc;
+}
+
+.chartTable {
+  border: 1px solid black;
+}
+
+input:disabled {
+  color: gray;
+  background-color: darkgray;
+}

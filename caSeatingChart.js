@@ -1,22 +1,29 @@
 /*
 * Copyright 2019 SpookyGroup LLC. All rights reserved.
 */
-const maxRowsPerBus = 30;
 
 function formatMember(contact) {
-    return "<a href='%s'>%s, %s</a><br>%s".format(
+    var style = (contact.MembershipLevel.Name == 'Chaperone') ? 'color:black' : 'color:white';
+    
+    return '<a style="%s" href="%s">%s, %s</a><br>%s'.format(
+        style,
         memberHome(contact.Id), 
-        contact.LastName, contact.FirstName, contact.MembershipLevel.Name
+        contact.LastName, contact.FirstName, 
+        contact.MembershipLevel.Name
     );
 }
 
 function clearAllCells() {
     for (var i = maxRowsPerBus; i > 0; i--) {
         var rowNumber = '%s'.format(i).padStart(2, '0');
-        document.getElementById(rowNumber + 'A').innerHTML = '';
-        document.getElementById(rowNumber + 'B').innerHTML = '';
-        document.getElementById(rowNumber + 'C').innerHTML = '';
-        document.getElementById(rowNumber + 'D').innerHTML = '';
+        
+        var seats = ['A', 'B', 'C', 'D'];
+        
+        for (var i = 0; i < seats.length; i++) {
+            var cell = document.getElementById(rowNumber + seats[i]);
+            cell.innerHTML = '';
+            cell.style = '';
+        }
     }
 }
 
@@ -46,7 +53,12 @@ function executeQuery(busNumber) {
 
             for (var i = 0; i < contacts.length; i++) {
                 resultCount ++;
-                document.getElementById(fieldValue(contacts[i], TripBusSeat)).innerHTML = formatMember(contacts[i]);
+                var contact = contacts[i];
+                var elt = document.getElementById(fieldValue(contact, TripBusSeat));
+                elt.innerHTML = formatMember(contact);
+                elt.style = memberStatusBackgroundStyle(fieldValue(contact, 'Member Status'))
+                console.log('style', elt.style);
+                
             }
             
             document.getElementById('listCount').innerHTML = '%s Seat%s in Use'.format(resultCount, resultCount == 1 ? '' : 's');

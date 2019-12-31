@@ -18,6 +18,8 @@ const TripInjuryNotes = "First Aid Notes";
 const TripLastUpdateDate  = "TripLastUpdateDate";
 const TripDetentionFlag = 'Detention?';
 const TripDetentionNotes = 'Detention Explanation';
+const ProficiencyField = 'Proficiency Test Pass?'; 
+const TripTestDate = 'TripTestDate';
 
 const fieldCellPhone = "Cell Phone";
 const detentionRequired = 12555903;
@@ -53,6 +55,7 @@ $.nextPage = function(pageType) {
             nextPage = '%s/morningCheckIn?ID=%s&type=%s'.format(clubBaseURL, $.data.Id, pageType);
             break;
 
+        // check in for lunch, lesson, testing, etc.
         case pageLunch:
         case pageLesson:
         case pageDepart:
@@ -131,18 +134,7 @@ $.pageOpen = function(callback) {
 
                 var profilePhotoBackground = document.getElementById('photoBackground')
                 if (profilePhotoBackground) {
-                    if (memberStatus) {
-                        switch(memberStatus.Id) {
-                            case 12483751:
-                            case 12483744:
-                            case 12483745:
-                                profilePhotoBackground.style = 'background-color:green';
-                                break;
-                            default:
-                                profilePhotoBackground.style = 'background-color:red';
-                                break;
-                        }
-                    }
+                    profilePhotoBackground.style = memberStatusBackgroundStyle(memberStatus);
                 }
 
                 var profilePhotoCell = document.getElementById("profilePhoto");
@@ -412,6 +404,53 @@ function FLSCresetTripFieldsAll(api, resultCount) {
         },
         error: function (data, textStatus, jqXhr) {
             ;
+        }
+    });
+}
+
+//retrieves the current registration for the member
+function getCurrentEvent(api, memberID, membershipLevel, callback) {
+    // get Event Info
+    api.apiRequest({
+        apiUrl: api.apiUrls.events(),
+        success: function (data, textStatus, jqXhr) {
+            console.log('list', data);
+
+            var todaysEvents = [];
+            var today = new Date().toJSON().slice(0,10);
+            var events = data.Events;
+            for (i=0; i < events.length; i++) {
+                var event = events[i];
+                if (event.EndDate.slice(0,10) == today && event.Name.includes(membershipLevel)) {
+                    console.log('found today event', event);
+                    todaysEvents.push(event);
+                }
+            }
+            if (todaysEvents.length==0) {
+                alert('This is no %s event for today'.format(membershipLevel));
+                return;
+            }
+
+            // Is this member registered for this event?
+            $.eventID = todaysEvents[0].Id;            
+            var params = {
+                contactId: memberID,
+                eventId: $.eventID,
+            };
+
+            api.apiRequest({
+                apiUrl:api.apiUrls.registrations(params),
+                success: function (data, textStatus, jqXhr) {
+                    callback(data);
+                },
+                error: function (data, textStatus, jqXhr) {
+                    //document.getElementById('listResults2').innerHTML = html = 'failed getting search result: ' + textStatus;
+                }
+            });
+
+        },
+        error: function (data, textStatus, jqXhr) {
+            //document.getElementById('listResults2').innerHTML = html = 'failed getting search result: ' + textStatus;
         }
     });
 }

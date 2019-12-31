@@ -1,43 +1,15 @@
+/*
+* Copyright 2019 SpookyGroup LLC. All rights reserved.
+*/
+
 // caCertification.js
 
 class WAObject {
-    constructor(Name, Id) {
-        this.Name = Name;
+    constructor(Label, Id) {
+        this.Label = Label;
         this.Id = Id;
-        this.Value = Id;
     }
 }
-
-const evalSkiPass = new WAObject('ski', 12469877);
-const evalBoardPass = new WAObject('board', 12469878);
-const evalSkiFail   = new WAObject('Fail-Ski', 12469879);
-const evalBoardFail = new WAObject('Fail-Board', 12469880);
-const evalFailTypeOutOfControl = new WAObject('Out of control', 12469432);
-const evalFailTypeLeanBack = new WAObject('Sitting/leaning back', 12469433);
-const evalFailTypeFlailArms = new WAObject('Flailing arms', 12469430);
-const evalFailTypeLiftsSkis = new WAObject('Lifts skis', 12469431);
-const evalFailTypeUsePoles = new WAObject('Doesn’t use poles', 12469881);
-const evalFailTypeSnowPlow = new WAObject('Snow plow', 12469434);
-const evalFailTypeCarveTurns = new WAObject('Doesn’t carve turns', 12469882);
-const evalFailTypeLinkTurns = new WAObject('Doesn’t link turns', 12469883);
-const evalFailTypeTorsoTurn = new WAObject('Torso turning', 12469884);
-
-
-const allEvalType = [
-    evalSkiPass,
-    evalBoardPass,
-    evalSkiFail,
-    evalBoardFail,
-    evalFailTypeOutOfControl,
-    evalFailTypeLeanBack,
-    evalFailTypeFlailArms,
-    evalFailTypeLiftsSkis,
-    evalFailTypeUsePoles,
-    evalFailTypeSnowPlow,
-    evalFailTypeCarveTurns,
-    evalFailTypeLinkTurns,
-    evalFailTypeTorsoTurn,
-];
 
 const evalFields = {
     '12469877' : 'ski', 
@@ -71,16 +43,68 @@ document.addEventListener('DOMContentLoaded', function(){
 function saveForm() {
     var i = 0;
 
-    var settings = [];
+    var values = [];
 
     var elements = document.getElementsByName('passFail');
     for (i = 0; i< elements.length; i++) {
         element = elements[i];
         if (element.checked == true) {
-            settings.push();
+            values.push(new WAObject(evalFields[element.id], parseInt(element.id, 10)));
         }
-
     }
-    // 'failtype'
+    
+    elements = document.getElementsByName('failType');
+    for (i = 0; i< elements.length; i++) {
+        element = elements[i];
+        if (element.checked == true) {
+            values.push(new WAObject(evalFields[element.id], parseInt(element.id, 10)));
+        }
+    }
+
+    console.log('values', values);
+
+    var fieldValues = [ 
+        { fieldName:ProficiencyField, value: values },   
+        { fieldName:TripTestDate, value: FLSCformatDate(new Date()) }
+    ];
+    
+    if (notes != undefined && notes != '') {
+        notes = FLSCformatComment(fieldValue($.data, TripChapNotes), notes, $.chapName);
+        fieldValues.push({ fieldName: TripChapNotes, value: notes });
+    }
+    
+    FLSCputMemeberData($.api, $.memberID, fieldValues, 
+        function(fieldValues, textStatus) {
+            FLSCwindowAlert('Certification saved successfully');
+            FLSCwindowBack();
+        }, 
+        function(fieldValues, textStatus) {
+            FLSCwindowAlert("Update failed. Try again. " + textStatus);
+        }
+    );
+}
+
+function resetCertification() {
+    // removes all values from the testing field. Does accept comment if Chap wants to say why they did this.
+
+    var fieldValues = [ 
+        { fieldName:ProficiencyField, value: [ ] },
+        { fieldName:TripTestDate, value: null },
+    ];
+    
+    if (notes != undefined && notes != '') {
+        notes = FLSCformatComment(fieldValue($.data, TripChapNotes), notes, $.chapName);
+        fieldValues.push({ fieldName: TripChapNotes, value: notes });
+    }
+    
+    FLSCputMemeberData($.api, $.memberID, fieldValues, 
+        function(fieldValues, textStatus) {
+            FLSCwindowAlert('Certification reset successfully');
+            FLSCwindowBack();
+        }, 
+        function(fieldValues, textStatus) {
+            FLSCwindowAlert("Reset failed. Try again. " + textStatus);
+        }
+    );
 
 }

@@ -3,7 +3,9 @@
 *
 * test harness code
 */
-
+function formatFieldID(fieldName, value, Id) {
+    return '%s//%s [%s]<br>'.format(fieldName, Id, value);
+}
 function FLSCdebugData(data) {
     var allFields = '';
     allFields += formatField('DisplayName', data.DisplayName);
@@ -22,8 +24,10 @@ function FLSCdebugData(data) {
 
     for (index = 0; index < data.FieldValues.length; index++) { 
         var o = data.FieldValues[index];
-        allFields += formatField(o.FieldName, o.Value);
+        allFields += formatFieldID(o.FieldName, o.Value, o.SystemCode);
     }
+    var testing = fieldValue(data, 'Proficiency Test Pass?');
+
     return allFields;
 }
 
@@ -143,7 +147,7 @@ function testContactFields() {
 
 }
 
-function formatContactFieldData(data) {
+function formatRegistrationFieldData(data) {
     var allowedValues = 'DisplayName:(%s) IsCheckedIn:(%s) RegistrationType:(%s) <br>'.format(data.DisplayName, data.IsCheckedIn, data.RegistrationType.Name);
     
     // data.RegistrationFields[]
@@ -189,7 +193,7 @@ function testEventRegistrations() {
             var html = '<table>';
 
             for (var i = 0; i < data.length; i++) {
-                html += formatContactFieldData(data[i]);
+                html += formatRegistrationFieldData(data[i]);
             }
 
             html += '</table>';
@@ -211,7 +215,7 @@ var tests = [
     testDateFormat,
     // testQuery1,
     testContactFields,
-    testEventRegistrations
+    //// testEventRegistrations
     /* testReportBlankViolation,
     testReportViolation,
     testCheckInAM,

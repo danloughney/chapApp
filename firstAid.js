@@ -18,19 +18,18 @@ document.addEventListener("DOMContentLoaded", function() {
         search = searches[$.listName];
         $.api.apiRequest({
             apiUrl: $.api.apiUrls.contacts({ '$filter' : search.filter, 
-                                             '$sort'   : search.sorter, 
-                                             '$select' : search.selector }),
+                                             //'$sort'   : search.sorter, 
+                                             //'$select' : search.selector }
+            }),
             success: function (data, textStatus, jqXhr) {
                 var resultCount = 0;
                 var contacts = data.Contacts;
-                
+            
+                contacts.sort(search.sorter || { } );
+
                 for (var i = 0; i < contacts.length; i++) {
                     resultCount ++;
-                    if ($.listName == 'First Aid') {
-                        html += formatMemberFirstAid(contacts[i]);
-                    } else {
-                        html += formatMember(contacts[i]);
-                    }
+                    html += formatMemberFirstAid(contacts[i]);
                 }
 
                 html += '</table>'

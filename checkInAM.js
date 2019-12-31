@@ -35,6 +35,7 @@ function appendMemberName(text) {
     document.getElementById("memberName").innerHTML = ele;
 }
 
+
 function openCallback(memberData) {
     $.CIR = new CheckInReady();
     if ($.memberID) $.CIR.memberID = true;
@@ -50,64 +51,24 @@ function openCallback(memberData) {
         enableButton();
     });
 
-    // get Event Info
-    $.api.apiRequest({
-        apiUrl: $.api.apiUrls.events(),
-        success: function (data, textStatus, jqXhr) {
-            console.log('list', data);
+    var membershipLevel = memberData.MembershipLevel.Name;
 
-            var membershipLevel = memberData.MembershipLevel.Name;
+    getCurrentEvent($.api, $.memberID, membershipLevel, function(events) {
+        if (events.length == 0) {
+            appendMemberName('UNREGISTERED');
+            alert('%s isn\'t registered for today\'s trip!'.format(membershipLevel));
+        } else {
+            $.CIR.eventID = true;
+            enableButton();
 
-            var todaysEvents = [];
-            var today = new Date().toJSON().slice(0,10);
-            var events = data.Events;
-            for (i=0; i < events.length; i++) {
-                var event = events[i];
-                if (event.EndDate.slice(0,10) == today && event.Name.includes(membershipLevel)) {
-                    console.log('found today event', event);
-                    todaysEvents.push(event);
+            // display lesson info
+            var registration = events[0];
+            for (i=0; i < registration.RegistrationFields.length; i++) {
+                if (registration.RegistrationFields[i].FieldName == "Lesson Options") {
+                    $.lessonOption = registration.RegistrationFields[i].Value.Label;
+                    appendMemberName($.lessonOption);
                 }
             }
-            if (todaysEvents.length==0) {
-                alert('This is no %s event for today'.format(membershipLevel));
-                return;
-            }
-
-            // Is this member registered for this event?
-            $.eventID = todaysEvents[0].Id;            
-            var params = {
-                contactId: $.memberID,
-                eventId: $.eventID,
-            };
-
-            $.api.apiRequest({
-                apiUrl: $.api.apiUrls.registrations(params),
-                success: function (data, textStatus, jqXhr) {
-                    if (data.length == 0) {
-                        appendMemberName('UNREGISTERED');
-                        alert('%s isn\'t registered for this trip!'.format(membershipLevel));
-                    } else {
-                        $.CIR.eventID = true;
-                        enableButton();
-
-                        // display lesson info
-                        var registration = data[0];
-                        for (i=0; i < registration.RegistrationFields.length; i++) {
-                            if (registration.RegistrationFields[i].FieldName == "Lesson Options") {
-                                $.lessonOption = registration.RegistrationFields[i].Value.Label;
-                                appendMemberName($.lessonOption);
-                            }
-                        }
-                    }
-                },
-                error: function (data, textStatus, jqXhr) {
-                    //document.getElementById('listResults2').innerHTML = html = 'failed getting search result: ' + textStatus;
-                }
-            });
-
-        },
-        error: function (data, textStatus, jqXhr) {
-            //document.getElementById('listResults2').innerHTML = html = 'failed getting search result: ' + textStatus;
         }
     });
 }

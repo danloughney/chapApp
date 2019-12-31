@@ -125,3 +125,22 @@ function openQRCamera(node) {
     };
     reader.readAsDataURL(node.files[0]);
 }
+
+function openQRCameraFirstAid(node) {
+  var reader = new FileReader();
+  reader.onload = function() {
+    node.value = "";
+    qrcode.callback = function(res) {
+      if(res === undefined || res instanceof Error || res == '') {
+        alert("Could not read the QR code. Try again.");
+      } else {
+          // alert(res);
+          //node.parentNode.previousElementSibling.value = res;
+          var url = 'https://foxlaneskiclub.wildapricot.org/caFirstAid?ID=' + res;
+          window.location.replace(url);
+      }
+    };
+    qrcode.decode(reader.result);
+  };
+  reader.readAsDataURL(node.files[0]);
+}

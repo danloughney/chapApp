@@ -8,10 +8,15 @@ const FLSCphoto = "Photo";
 const FLSCclientID = "8jc86buyhc";
 const clubBaseURL = 'https://foxlaneskiclub.wildapricot.org';
 
+// trip configurations
+const maxRowsPerBus = 16;
+const maxBusesPerTrip = 5;
 
+// field value definitions
 const MembershipLevelChaperone = 1088585;
 const MembershipLevelStudent = 1089064;
 const MembershipLevelSibling = 1092553;
+
 
 String.prototype.format = function() {
     var newStr = this, i = 0;
@@ -109,20 +114,22 @@ function fieldValue(data, name) {
     return undefined;
 }
 
-// API.member.data layout
-// .DisplayName
-// .Email
-// .FirstName
-// .LastName
-// .Id
-// .IsAccountAdministrator
-// .MembershipEnabled
-// .MembershipLevel.Name
-// .Organization (mobile number?)
-// .ProfileLastUpdated
-// .Status (Active)
-// .TermsOfUseAccepted
-// .Url
+
+function memberStatusBackgroundStyle(memberStatus) {
+    // any 'restricted' member status receives a red background color
+    if (memberStatus) {
+        switch(memberStatus.Id) {
+            case 12483751:
+            case 12483744:
+            case 12483745:
+                return 'background-color:green;color:white;';
+
+            default:
+                return 'background-color:red;color:white;';
+        }
+    }
+    return 'background-color:white;color:black;';
+}
  
 function formatField(fieldName, value) {
     return fieldName + ': [' + value + ']<br>'

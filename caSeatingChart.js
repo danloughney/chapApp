@@ -3,7 +3,7 @@
 */
 
 function formatMember(contact) {
-    var style = (contact.MembershipLevel.Name == 'Chaperone') ? 'color:black' : 'color:white';
+    var style = (contact.MembershipLevel.Name == 'Chaperone' || contact.MembershipLevel.Name == 'Sibling') ? 'color:black' : 'color:white';
     
     return '<a style="%s" href="%s">%s, %s</a><br>%s'.format(
         style,
@@ -19,10 +19,12 @@ function clearAllCells() {
         
         var seats = ['A', 'B', 'C', 'D'];
         
-        for (var i = 0; i < seats.length; i++) {
-            var cell = document.getElementById(rowNumber + seats[i]);
-            cell.innerHTML = '';
-            cell.style = '';
+        for (var j = 0; j < seats.length; j++) {
+            var cell = document.getElementById(rowNumber + seats[j]);
+            if (cell != undefined) {
+                cell.innerHTML = '';
+                cell.style = '';    
+            }
         }
     }
 }

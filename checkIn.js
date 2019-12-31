@@ -79,10 +79,9 @@ function openCallback(memberData) {
 
 document.addEventListener('DOMContentLoaded', function(){
     $.checkInType = $.urlParam('type');
+    document.getElementById('checkInLabel').innerHTML = $.checkInType + ' Check In';
 
     $.pageOpen(openCallback);
-
-    document.getElementById('checkInLabel').innerHTML = $.checkInType + ' Check In';
 });
 
 function executeCheckIn() {

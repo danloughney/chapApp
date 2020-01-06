@@ -58,16 +58,29 @@ function executeQuery(busNumber) {
                 var contact = contacts[i];
                 var elt = document.getElementById(fieldValue(contact, TripBusSeat));
                 elt.innerHTML = formatMember(contact);
-                elt.style = memberStatusBackgroundStyle(fieldValue(contact, 'Member Status'))
-                console.log('style', elt.style);
-                
+                elt.style = memberStatusBackgroundStyle(fieldValue(contact, 'Member Status'));
             }
-            
             document.getElementById('listCount').innerHTML = '%s Seat%s in Use'.format(resultCount, resultCount == 1 ? '' : 's');
         },
         error: function (data, textStatus, jqXhr) {
             ;
         }
+    });
+
+    sgGetBusCaptain(busNumber, function(data) {
+        var contacts = data.Contacts;
+        var html = '<table width="100%">';
+
+        if (contacts.length == 0) {
+            document.getElementById('captainInfo').innerHTML = 'No Captain Identified';           
+            return; 
+        }
+
+        for (var i = 0; i < contacts.length; i++) {
+            html += '<tr><td width="30%">%s</td><td width="70%"><button class="btnRed" onclick="FLSCcall(\'%s\');">Call</button></td></tr>'.format(FLSCformatChapName(contacts[i]), fieldValue(contacts[i], 'Cell Phone'));
+        }
+        html += "</table>";
+        document.getElementById('captainInfo').innerHTML = html;
     });
 }
 
@@ -81,11 +94,12 @@ function renderRow(rowType, rowNumber, className) {
         <%s class="%s" width="20%" id="%s"></%s> \
         </tr>'.format(
             rowNumber, 
-            rowType, className, rowNumber+'D', rowType, 
-            rowType, className, rowNumber+'C', rowType, 
+            rowType, className, rowNumber+'A', rowType,
+            rowType, className, rowNumber+'B', rowType,  
             rowType, rowType,
-            rowType, className, rowNumber+'B', rowType, 
-            rowType, className, rowNumber+'A', rowType);
+            rowType, className, rowNumber+'C', rowType, 
+            rowType, className, rowNumber+'D', rowType
+            );
 }
 
 document.addEventListener("DOMContentLoaded", function() {

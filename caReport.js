@@ -68,9 +68,13 @@ document.addEventListener('DOMContentLoaded', function(){
 
 function saveText() {
     var text = document.getElementById('notesTextArea').value;
-    var options = document.getElementById('violationRadio');
+    var options = document.getElementsByName('violationRadio');
     if (options != undefined) {
-        text = '%s... %s'.format(options.value, text);
+        for(var i = 0; i < options.length; i++) { 
+            if(options[i].checked) {
+                text = '%s... %s'.format(options[i].value, text);
+            }
+        }
     }
 
     if (text == undefined || text == '') {

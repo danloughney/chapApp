@@ -110,6 +110,35 @@ function testQuery1() {
     });
 }
 
+function testPhotoUpload() {
+    var result = $.ajax({
+        url: memberQR(1234),
+        type: "GET",
+        dataType: "text",
+        cache: false,
+        // headers: { "clientId": this.clientId },
+        success: function(){
+            console.log('success');
+        },
+        error: function(){
+            console.log('error');
+        },
+        data: data,
+        contentType: "text"
+    });
+    
+    
+    // $.api.apiRequest({
+    //     apiUrl: $.api.apiUrls.picture(photoValue.Id) + '?asBase64=true&fullSize=true',
+    //     method: "PUT",
+    //     dataType: 'multipart/form-data',
+    //     success: function(photoData, textStatus, jqXhr) {
+    //         document.getElementById('profilePhoto').src = 'data:image;base64,' + photoData;
+    //         //document.getElementById('profilePhoto').addEventListener('click', goMemberHome);
+    //     } 
+    // });
+}
+
 function formatContactFieldData(data) {
     var allowedValues = '';
     if (data.AllowedValues.length > 0) {

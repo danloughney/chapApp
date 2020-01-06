@@ -80,6 +80,8 @@ document.addEventListener('DOMContentLoaded', function(){
     $.pageOpen(openCallback);
 
     var busNumber = getCookie('busNumber') || '1';
+    if (busNumber == '') busNumber = '1';
+
     var cell = document.getElementById('busNumber'+busNumber);
     cell.checked = true;
 
@@ -87,7 +89,7 @@ document.addEventListener('DOMContentLoaded', function(){
     cell = document.getElementById('row').value = row;
 
     var seat = getCookie('seat') || 'A';
-    cell = document.getElementById('seat').value = seat;
+    cell = document.getElementById('seat%s'.format(seat)).checked = true;
 });
 
 function executeCheckIn() {
@@ -98,9 +100,15 @@ function executeCheckIn() {
     row = row.padStart(2, '0');
     setCookie('row', row, 1);
 
-    var seat = document.getElementById("seat").value;
+    var seat = "1";
+    var seatElements = document.getElementsByName('seat');
+    for(var i = 0; i < seatElements.length; i++) { 
+        if(seatElements[i].checked) {
+            seat = seatElements[i].value;
+        }
+    }
     setCookie('seat', seat, 1);
-
+    
     var seatNumber = row + seat;
     checkInAM(busNumber, seatNumber, document.getElementById("notes").value, undefined)
 }
@@ -125,7 +133,7 @@ function checkInAM (busNumber, seatNumber, notes) {
                     }
                     break;
                 case 0:
-                    if (confirm("Do you want to check in " + $.data.FirstName + " " + $.data.LastName + "?")) {
+                    if (confirm("Do you want to check in %s %s in Seat %s on Bus %s?".format($.data.FirstName, $.data.LastName, seatNumber, busNumber))) {
                         FLSCcheckInAM($.api, $.memberID, busNumber, seatNumber, notes);
                         WAcheckInTrip($.api, $.memberID, $.eventID);
                     }

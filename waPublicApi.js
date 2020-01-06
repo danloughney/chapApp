@@ -39,7 +39,7 @@ function WApublicApi(clientId) {
         else {
             data = JSON.stringify(params.data);
         }
-        
+        ///TODO: figure out how to do multipart boundries in ajax/data
         return $.ajax({
             url: params.apiUrl,
             type: params.method || "GET",
@@ -166,7 +166,7 @@ function WApublicApi(clientId) {
             return this.account() + '/tenders';
         },
         picture: function(pictureId) {
-            return this.account() + '/pictures/' + pictureId;
+            return this.account() + '/pictures/' + pictureId || '';
         },
         savedSearches: function() {
             return this.account() + '/savedsearches';

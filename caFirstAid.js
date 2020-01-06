@@ -58,28 +58,28 @@ document.addEventListener("DOMContentLoaded", function() {
             document.getElementById('allergyInfo').innerHTML = 'No allergies noted';
         }
 
-        document.getElementById('parent1Name').innerHTML = fieldValue(data, parent1name);
-        document.getElementById('parent1Contacts').innerHTML = '%s%s%s&nbsp;'.format(
-            contactHTML(data, parent1mobile, 'Mobile'),
-            contactHTML(data, parent1mobile, 'Text'),
-            contactHTML(data, parent1email, 'Email')
+        document.getElementById('parent1Name').innerHTML = "Contact %s".format(fieldValue(data, parent1name));
+        document.getElementById('parent1Contacts').innerHTML = '%s%s&nbsp;'.format(
+            contactHTML(data, parent1mobile, 'Call Mobile'),
+            contactHTML(data, parent1mobile, 'Send Text')
+            // contactHTML(data, parent1email, 'Email')
         );
 
-        document.getElementById('parent2Name').innerHTML = fieldValue(data, parent2name);
-        document.getElementById('parent2Contacts').innerHTML = '%s%s%s&nbsp;'.format(
-            contactHTML(data, parent2mobile, 'Mobile'),
-            contactHTML(data, parent2mobile, 'Text'),
-            contactHTML(data, parent2email, 'Email')
+        document.getElementById('parent2Name').innerHTML = "Contact %s".format(fieldValue(data, parent2name));
+        document.getElementById('parent2Contacts').innerHTML = '%s%s&nbsp;'.format(
+            contactHTML(data, parent2mobile, 'Call Mobile'),
+            contactHTML(data, parent2mobile, 'Send Text')
+            // contactHTML(data, parent2email, 'Email')
         );
 
         var value = fieldValue(data, TripInjuryNotes);
-        document.getElementById('injuryLabel').innerHTML = (value == '' || value === undefined) ? 'No injuries reported' : value;
+        document.getElementById('injuryLabel').innerHTML = (value == '' || value == undefined) ? 'No injuries reported' : value;
 
         value = fieldValue(data, TripChapNotes);
-        document.getElementById('notesLabel').innerHTML = (value == '' || value === undefined) ? 'No notes' : value;
+        document.getElementById('notesLabel').innerHTML = (value == '' || value == undefined) ? 'No notes' : value;
         
         value = fieldValue(data, TripViolationNotes);
-        document.getElementById('violationLabel').innerHTML = (value == '' || value === undefined) ? 'No violations reported' : value;
+        document.getElementById('violationLabel').innerHTML = (value == '' || value == undefined) ? 'No violations reported' : value;
         
         value = fieldValue(data, TripDetentionFlag);
         if (value == '' || value == undefined) {

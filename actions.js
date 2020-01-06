@@ -20,6 +20,7 @@ const TripDetentionFlag = 'Detention?';
 const TripDetentionNotes = 'Detention Explanation';
 const ProficiencyField = 'Proficiency Test Pass?'; 
 const TripTestDate = 'TripTestDate';
+const TripBusCaptain = 'TripBusCaptain'
 
 const fieldCellPhone = "Cell Phone";
 const detentionRequired = 12555903;
@@ -88,7 +89,21 @@ function sgGetChapInfo() {
         success: function (chapData, textStatus, jqXhr) {
             $.chapName = FLSCformatChapName(chapData);
             $.chapID = chapData.Id;
+            $.busCaptain = fieldValue(chapData, TripBusNumber);
             console.log('got chap info');
+        }
+    });
+}
+
+function sgGetBusCaptain(busNumber, completion) {
+    $.api.apiRequest({
+        apiUrl: $.api.apiUrls.contacts({ '$filter' : "'TripBusCaptain' eq '%s'".format(busNumber) }),
+
+        success: function (data, textStatus, jqXhr) {
+            completion(data);
+        },
+        error: function (data, textStatus, jqXhr) {
+            console.log('find bus captain failed');
         }
     });
 }
@@ -362,25 +377,27 @@ function CAmemberQuery(api, query, fields, completion) {
 
 function FLSCresetTripFields(api, memberID, completion) {
     var fieldValues = [
-        { fieldName: TripCheckInMorning, value: undefined },
-        { fieldName: TripCheckInLunch, value: undefined },
-        { fieldName: TripCheckInDepart, value: undefined },
-        { fieldName: TripCheckInLesson, value: undefined },
-        { fieldName: TripCheckInTesting, value: undefined },
-        { fieldName: TripBusNumber, value: undefined },
-        { fieldName: TripBusSeat, value: undefined },
-        { fieldName: TripViolationDate, value: undefined },
-        { fieldName: TripViolationNotes, value: undefined },
-        { fieldName: TripChapNotes, value: undefined },
-        { fieldName: TripInjuryNotes, value: undefined },
-        { fieldName: TripLastUpdateDate, value: undefined }
+        { fieldName: TripCheckInMorning, value: null },
+        { fieldName: TripCheckInLunch, value: null },
+        { fieldName: TripCheckInDepart, value: null },
+        { fieldName: TripCheckInLesson, value: null },
+        { fieldName: TripCheckInTesting, value: null },
+        { fieldName: TripBusNumber, value: null },
+        { fieldName: TripBusSeat, value: null },
+        { fieldName: TripViolationDate, value: null },
+        { fieldName: TripViolationNotes, value: null },
+        { fieldName: TripChapNotes, value: null },
+        { fieldName: TripInjuryNotes, value: null },
+        { fieldName: TripLastUpdateDate, value: null },
+        { fieldName: TripTestDate, value: null },
+        { fieldName: TripBusCaptain, value: null }
     ];
 
     console.log('resetting memberID', memberID);
 
     FLSCputMemeberData(api, memberID, fieldValues, 
         function(fieldValues, textStatus) {
-            console.log('data reset successfully');
+            console.log('%s data reset successfully'.format(memberID));
         },
         function(fieldValues, textStatus) {
             console.log('data reset FAILED ' + textStatus);
@@ -390,14 +407,29 @@ function FLSCresetTripFields(api, memberID, completion) {
 
 function FLSCresetTripFieldsAll(api, resultCount) {
     $.api.apiRequest({
-        apiUrl: api.apiUrls.contacts({ '$filter' : "'Status' eq 'Active' and 'TripCheckInMorning' ne NULL",
+        apiUrl: api.apiUrls.contacts({ '$filter' : "'Status' eq 'Active' and (" + 
+                                                    "('TripCheckInMorning' ne '' and 'TripCheckInMorning' ne NULL) or " + 
+                                                    "('TripBusNumber' ne ''      and 'TripBusNumber' ne NULL) or " + 
+                                                    "('TripBusSeat' ne ''        and 'TripBusSeat' ne NULL) or " + 
+                                                    "('TripCheckInLunch' ne ''   and 'TripCheckInLunch' ne NULL) or " + 
+                                                    "('TripCheckInDepart' ne ''  and 'TripCheckInDepart' ne NULL) or " + 
+                                                    "('TripCheckInLesson' ne ''  and 'TripCheckInLesson' ne NULL) or " + 
+                                                    "('TripCheckInTesting' ne '' and 'TripCheckInTesting' ne NULL) or " + 
+                                                    "('TripViolationDate' ne ''  and 'TripViolationDate' ne NULL) or " + 
+                                                    "('TripViolationNotes' ne '' and 'TripViolationNotes' ne NULL) or " + 
+                                                    "('TripLastUpdateDate' ne '' and 'TripLastUpdateDate' ne NULL) or " + 
+                                                    "('TripTestDate' ne ''       and 'TripTestDate' ne NULL) or " + 
+                                                    "('TripBusCaptain' ne ''     and 'TripBusCaptain' ne NULL) )",
                                         '$top' : '1'}),
 
         success: function (data, textStatus, jqXhr) {
             var contacts = data.Contacts;
+            if (contacts.length == 0) {
+                console.log('no members to reset');
+            }
             
             for (var i = 0; i < contacts.length; i++) {
-                console.log('resetting', resultCount);
+                console.log('resetting ', resultCount, contacts[i].LastName, contacts[i].FirstName);
                 FLSCresetTripFields(api, contacts[i].Id);
                 FLSCresetTripFieldsAll(api, ++resultCount);
             }

@@ -87,6 +87,10 @@ function goMemberFirstAid(id) {
     window.location = memberFirstAid(id);
 }
 
+function memberQR(id) {
+    return "https://chart.googleapis.com/chart?cht=qr&chs=200x200&chl=" + id;
+}
+
 function memberURL(id) {
     return "https://chart.googleapis.com/chart?cht=qr&chs=200x200&chl=" + id;
 }
@@ -108,12 +112,11 @@ function fieldValue(data, name) {
     }
     for (index = 0; index < data.FieldValues.length; index++) { 
         if (data.FieldValues[index].FieldName == name) {
-            return data.FieldValues[index].Value;
+            return (data.FieldValues[index].Value == null) ? '' : data.FieldValues[index].Value;
         }
     }
     return undefined;
 }
-
 
 function memberStatusBackgroundStyle(memberStatus) {
     // any 'restricted' member status receives a red background color
@@ -122,10 +125,14 @@ function memberStatusBackgroundStyle(memberStatus) {
             case 12483751:
             case 12483744:
             case 12483745:
-                return 'background-color:green;color:white;';
+                return 'background-color:darkgreen;color:white;';
+
+            case 12483748:
+            case 12483749:
+                return 'background-color:gold;color:white;';
 
             default:
-                return 'background-color:red;color:white;';
+                return 'background-color:crimson;color:white;';
         }
     }
     return 'background-color:white;color:black;';
@@ -153,8 +160,13 @@ function AMPM(hrs) {
 }
 
 function FLSCformatDate(d /* a date */) {
-    return d.getFullYear() + "-" + ("0"+(d.getMonth()+1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2) + " " +
+    // date with chap name indicating who checked in member
+    var ts = d.getFullYear() + "-" + ("0"+(d.getMonth()+1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2) + " " +
          ("0" + d.getHours()).slice(-2) + ":" + ("0" + d.getMinutes()).slice(-2);
+    if ($.chapName != undefined) {
+        return "%s | %s".format(ts, $.chapName);
+    }
+    return ts;
 }
 
 function FLSCformatDateAMPM(d /* a date */) {
@@ -188,7 +200,7 @@ function FLSCformatComment(currentComment, comment, chapName) {
     if (comment == undefined || comment =='') {
         return currentComment; // no action when no comment is supplied
     }
-    return '[' +  FLSCformatDate(new Date()) + ", " + chapName + ']<br>' + 
+    return '[' +  FLSCformatDate(new Date()) + ']<br>' + 
         comment + '<br><br>' + 
         currentComment;
 }

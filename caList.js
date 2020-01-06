@@ -100,6 +100,11 @@ function todaysRegistrations(membershipLevel) {
 }
 
 document.addEventListener("DOMContentLoaded", function() {
+
+    if (document.getElementById('rendered').value == 'yes') {
+        return;
+    }
+
     $.listName = $.urlParam('name');
     document.getElementById('listName').innerHTML = $.listName;
 
@@ -117,6 +122,7 @@ document.addEventListener("DOMContentLoaded", function() {
                     success: function (data, textStatus, jqXhr) {
                         document.getElementById('listResults').innerHTML = '';
                         renderResults(data.Contacts, formatMember);
+                        document.getElementById('rendered').value = 'yes';
                     },
                     error: function (data, textStatus, jqXhr) {
                         document.getElementById('listResults').innerHTML = html = 'failed getting search result: ' + textStatus;
@@ -129,6 +135,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 todaysRegistrations('Student');
                 todaysRegistrations('Sibling');
                 todaysRegistrations('Chaperone');
+                document.getElementById('rendered').value = 'yes';
                 break;
         }
        

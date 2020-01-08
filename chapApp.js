@@ -9,10 +9,15 @@ document.addEventListener("DOMContentLoaded", function() {
 
     var html = '';
     for (var i = 0; i < lists.length; i++) {
-        console.log('item: ', lists[i]);
-        var link = '\<a href="/caList?name=' + lists[i] + '">' + lists[i] + '</a><br>';
-        html += link;
-        console.log(link);
+        if (i != 0) html += '<br>';
+        html += '<a href="/caList?name=' + lists[i] + '">' + lists[i] + '</a>';
     }
-    document.getElementById("tblID").innerHTML = html;
+    document.getElementById("todaysLists").innerHTML = html;
+
+    html = '';
+    for (i = 0; i < lists2.length; i++) {
+        if (i != 0) html += '<br>';
+        html += '<a href="/caList?name=' + lists2[i] + '">' + lists2[i] + '</a>';
+    }
+    document.getElementById("membersLists").innerHTML = html;
 });

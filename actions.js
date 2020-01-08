@@ -147,6 +147,11 @@ $.pageOpen = function(callback) {
                     }
                 }
 
+                var currentNote = document.getElementById('currentNote');
+                if (currentNote != undefined) {
+                    currentNote.innerHTML = fieldValue($.data, TripChapNotes);
+                }
+                
                 var profilePhotoBackground = document.getElementById('photoBackground')
                 if (profilePhotoBackground) {
                     profilePhotoBackground.style = memberStatusBackgroundStyle(memberStatus);
@@ -174,6 +179,25 @@ $.pageOpen = function(callback) {
         });
         return false;
     });
+}
+
+function goMemberHomeByName(firstName, lastName) {
+    // not used
+    $.api.apiRequest({
+        apiUrl: $.api.apiUrls.contacts({ '$filter' : "'Status' eq 'Active' AND 'First name' eq %s AND 'Last name' eq %s".format(firstName, lastName)}),
+        success: function (data, textStatus, jqXhr) {
+            if (data.Contacts.length == 0) {
+                alert('could not find member %s %s'.format(firstName, lastName));
+                return;
+            }
+            goMemberHome(data.Contacts[0].Id);
+
+        },
+        error: function (data, textStatus, jqXhr) {
+            console.log('failed finding user by name');
+        }
+    });
+
 }
 
 function FLSCputMemeberData(api, memberID, fieldValues, fSuccess, fError) {
@@ -449,7 +473,7 @@ function getCurrentEvent(api, memberID, membershipLevel, callback) {
             console.log('list', data);
 
             var todaysEvents = [];
-            var today = new Date().toJSON().slice(0,10);
+            var today = $.todayOverride || new Date().toJSON().slice(0,10);
             var events = data.Events;
             for (i=0; i < events.length; i++) {
                 var event = events[i];

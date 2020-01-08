@@ -66,7 +66,7 @@ function openCallback(memberData) {
             for (i=0; i < registration.RegistrationFields.length; i++) {
                 if (registration.RegistrationFields[i].FieldName == "Lesson Options") {
                     $.lessonOption = registration.RegistrationFields[i].Value.Label;
-                    appendMemberName($.lessonOption);
+                    appendMemberName('Lesson: ' + $.lessonOption);
                 }
             }
         }

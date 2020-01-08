@@ -2,27 +2,12 @@
 * Copyright 2019 SpookyGroup LLC. All rights reserved.
 */
 
-var formatMember = function(contact) {
-    var busNumber = fieldValue(contact, TripBusNumber);
-    if (busNumber != undefined && busNumber != '') {
-        return "<tr><td><a href='%s'>%s, %s</a><br>Bus %s Seat %s</td></tr>".format(
-            memberHome(contact.Id), 
-            contact.LastName, contact.FirstName, 
-            fieldValue(contact, TripBusNumber), fieldValue(contact, TripBusSeat)
-        );    
-    }
-
-    return "<tr><td><a href='%s'>%s, %s</a></td></tr>".format(
-        memberHome(contact.Id), 
-        contact.LastName, contact.FirstName, 
-    );
-}
-
 var formatRegistration = function(registration) {
-    return "<tr><td><b>%s</b><br>%s&nbsp;&nbsp;&nbsp;Paid %s</td></tr>".format(
+        return '<tr><td><a href="%s">%s</a><br>%s&nbsp;&nbsp;&nbsp;%s</td></tr>'.format(
+        memberHome(registration.Contact.Id),
         registration.DisplayName, 
         registration.RegistrationType.Name,
-        (registration.IsPaid) ? 'Yes' : 'No'
+        (registration.IsPaid) ? '' : 'Not Paid'
     );
 }
 
@@ -35,16 +20,28 @@ function renderResults(contacts, formatFunction) {
     
     contacts.sort(search.sorter || { } );
 
-    var html = '<table>';
-
+    var html = '<table width="100%"><tr><td width="80%"><table>';
+    var lastLabel = '';
+    var labelList = [];
     for (var i = 0; i < contacts.length; i++) {
         if (search.includeFn(contacts[i]) == true) {
             resultCount ++;
+            var name = contacts[i].LastName || contacts[i].DisplayName;
+            if (lastLabel != name.substring(0, 1)) {
+                lastLabel = name.substring(0, 1).toUpperCase();
+                labelList.push(lastLabel);
+                html += '<tr><td align="center"><b>%s</b><a id=%s></a><td></tr>'.format(lastLabel, lastLabel);
+            }
             html += formatFunction(contacts[i]);
         }
    }
 
-    html += '</table>'
+   var indexHtml = ''; 
+   for (var i = 0;i<labelList.length; i++) {
+       indexHtml += '<a href="#%s">%s</a><br>'.format(labelList[i], labelList[i]);
+    }
+    html += '</table><td valign="top" align="center">%s</td></tr></table>'.format(indexHtml);
+
     html = document.getElementById('listResults').innerHTML + html;
     document.getElementById('listResults').innerHTML = html;
     
@@ -64,7 +61,7 @@ function todaysRegistrations(membershipLevel) {
             console.log('list', data);
 
             var todaysEvents = [];
-            var today = new Date().toJSON().slice(0,10);
+            var today = $.todayOverride || new Date().toJSON().slice(0,10);
             var events = data.Events;
             for (i=0; i < events.length; i++) {
                 var event = events[i];
@@ -101,9 +98,9 @@ function todaysRegistrations(membershipLevel) {
 
 document.addEventListener("DOMContentLoaded", function() {
 
-    if (document.getElementById('rendered').value == 'yes') {
-        return;
-    }
+    // if (document.getElementById('rendered').value == 'yes') {
+    //     return;
+    // }
 
     $.listName = $.urlParam('name');
     document.getElementById('listName').innerHTML = $.listName;
@@ -121,7 +118,7 @@ document.addEventListener("DOMContentLoaded", function() {
                                                      // '$select' : search.selector }),
                     success: function (data, textStatus, jqXhr) {
                         document.getElementById('listResults').innerHTML = '';
-                        renderResults(data.Contacts, formatMember);
+                        renderResults(data.Contacts, search.formatter);
                         document.getElementById('rendered').value = 'yes';
                     },
                     error: function (data, textStatus, jqXhr) {

@@ -5,20 +5,35 @@
 */
 
 class SavedSearch {
-    constructor(entity, filter, selector, sorter, includeFn, summaryFn) {
+    constructor(entity, filter, selector, sorter, formatter, includeFn, summaryFn) {
         this.entity = entity;
         this.filter = filter;
         this.selector = selector;
         this.sorter = sorter;
+        this.formatter = formatter || function(contact) {
+            var busNumber = fieldValue(contact, TripBusNumber);
+            if (busNumber != undefined && busNumber != '') {
+                return "<tr><td><a href='%s'>%s, %s</a><br>Bus %s Seat %s</td></tr>".format(
+                    memberHome(contact.Id), 
+                    contact.LastName, contact.FirstName, 
+                    fieldValue(contact, TripBusNumber), fieldValue(contact, TripBusSeat)
+                );    
+            }
+            return "<tr><td><a href='%s'>%s, %s</a></td></tr>".format(
+                memberHome(contact.Id), 
+                contact.LastName, contact.FirstName, 
+            );
+        };
         this.includeFn = includeFn || function() { return true;};
         this.summaryFn = summaryFn || function() { return ''; };
     }
 }
 
 const listTodayTrip = "Registered for Today's Trip";
-const listCheckedInTodayTrip = "Checked In on Today's Trip";
+const listCheckedInTodayTrip = "Checked In on Bus";
 const listViolation = "Violations";
 const listInTesting = "Checked In for Testing";
+const listTestResults = 'Testing Results';
 const listMissedLunch = 'Missed Lunch Check In';
 const listFirstAid = 'First Aid';
 const listInjury = 'Injuries';
@@ -30,15 +45,20 @@ const listLessons = 'Checked In for Lesson';
 
 // firstAid does not go in this public list of searches
 const lists = [
+    listTodayTrip,
+    listCheckedInTodayTrip,
+    listLessons,
+    listInTesting,
+    listTestResults,
+    listMissedLunch,
+    listViolation,
+    listInjury,
+];
+
+const lists2 = [
     listAllActiveMembers,
     listAllActiveSiblings,
     listAllChaperones,
-    listInTesting,
-    listLessons,
-    listMissedLunch,
-    listTodayTrip,
-    listCheckedInTodayTrip,
-    listViolation,
 ];
 
 const filterCheckedIn = "('Status' eq 'Active' AND 'TripCheckInMorning' ne NULL)";
@@ -72,13 +92,102 @@ const sortByTestingCheckin = function(a, b) {
     return x < y ? -1 : x > y ? 1 : 0;
 }
 
+function passFailLex(proficiencyArray) {
+    for (var i = 0; i < proficiencyArray.length; i++) {
+        proficiency = proficiencyArray[i];
+        switch(proficiency.Label) {
+            case 'ski':
+            case 'board':
+                return 0;
+        }
+    }
+    return 1;
+}
+
+const sortByPassFailAlpha = function(a, b) {
+    var pfieldA = passFailLex(fieldValue(a, ProficiencyField));
+    var pfieldB = passFailLex(fieldValue(b, ProficiencyField));
+
+    var x = '%s|%s|%s'.format(pfieldA, a.LastName, a.FirstName).toLowerCase();
+    var y = '%s|%s|%s'.format(pfieldB, b.LastName, b.FirstName).toLowerCase();
+    return x < y ? -1 : x > y ? 1 : 0;
+}
+
+function violationFormatter(contact) {
+    var busNumber = fieldValue(contact, TripBusNumber);
+    if (busNumber != undefined && busNumber != '') {
+        return "<tr><td><a href='%s'>%s, %s</a><br>Bus %s Seat %s<br>%s</td></tr>".format(
+            memberHome(contact.Id), 
+            contact.LastName, contact.FirstName, 
+            fieldValue(contact, TripBusNumber), fieldValue(contact, TripBusSeat),
+            fieldValue(contact, TripViolationNotes)
+        );    
+    }
+    return "<tr><td><a href='%s'>%s, %s</a></td></tr>".format(
+        memberHome(contact.Id), 
+        contact.LastName, contact.FirstName, 
+    );
+};
+
+function injuryFormatter(contact) {
+    var busNumber = fieldValue(contact, TripBusNumber);
+    if (busNumber != undefined && busNumber != '') {
+        return "<tr><td><a href='%s'>%s, %s</a><br>Bus %s Seat %s<br>%s</td></tr>".format(
+            memberHome(contact.Id), 
+            contact.LastName, contact.FirstName, 
+            fieldValue(contact, TripBusNumber), fieldValue(contact, TripBusSeat),
+            fieldValue(contact, TripInjuryNotes)
+        );    
+    }
+    return "<tr><td><a href='%s'>%s, %s</a></td></tr>".format(
+        memberHome(contact.Id), 
+        contact.LastName, contact.FirstName, 
+    );
+};
+
+function passFail(proficiencyArray) {
+    for (var i = 0; i < proficiencyArray.length; i++) {
+        proficiency = proficiencyArray[i];
+        switch(proficiency.Label) {
+            case 'ski':
+                return 'Pass Ski';
+
+            case 'board':
+                return 'Pass Board';
+
+            case 'Fail-Ski':
+                return 'Fail Ski';
+
+            case 'Fail-Board':
+                return 'Fail Board';
+        }
+    }
+    return 'Failed';
+}
+
+function testingFormatter(contact) {
+    var busNumber = fieldValue(contact, TripBusNumber);
+    if (busNumber != undefined && busNumber != '') {
+        return "<tr><td><a href='%s'>%s, %s</a><br>Bus %s Seat %s<br>%s</td></tr>".format(
+            memberHome(contact.Id), 
+            contact.LastName, contact.FirstName, 
+            fieldValue(contact, TripBusNumber), fieldValue(contact, TripBusSeat),
+            passFail(fieldValue(contact, ProficiencyField))
+        );    
+    }
+    return "<tr><td><a href='%s'>%s, %s</a></td></tr>".format(
+        memberHome(contact.Id), 
+        contact.LastName, contact.FirstName, 
+    );
+};
+
 const searches = {
     'Registered for Today\'s Trip' : new SavedSearch('registrations',
                                         filterCheckedIn, 
                                         selectBasicFields, 
                                         sortAlphabetically),
 
-    'Checked In on Today\'s Trip' : new SavedSearch('contacts',
+    'Checked In on Bus' : new SavedSearch('contacts',
                                         filterCheckedIn, // change this
                                         selectBasicFields, 
                                         sortAlphabetically),
@@ -89,14 +198,16 @@ const searches = {
                                         sortAlphabetically),
 
     'Injuries'      : new SavedSearch('contacts',
-                                        filterCheckedIn, 
+                                        "('Status' eq 'Active' and 'First Aid Notes' ne NULL)", 
                                         selectBasicFields,
-                                        sortAlphabetically),
+                                        sortAlphabetically,
+                                        injuryFormatter),
 
     'Bus Report'    : new SavedSearch('contacts',
                                         filterCheckedIn, 
                                         selectBasicFields,
                                         sortBySeat, 
+                                        undefined, // default formatter
                                         function() { 
                                             return false; // only need the summary
                                         },
@@ -139,34 +250,57 @@ const searches = {
                                         "('Status' eq 'Active' AND 'TripCheckInTesting' ne NULL AND 'TripTestDate' eq NULL)", 
                                         selectBasicFields, 
                                         sortByTestingCheckin),
-    
+    'Testing Results'           : new SavedSearch('contacts', 
+                                        "'Status' eq 'Active' and  substringof('TripTestDate', '%s')".format($.todayOverride || new Date().toJSON().slice(0,10)),
+                                        selectBasicFields, 
+                                        sortByPassFailAlpha,
+                                        testingFormatter,
+                                        function() { 
+                                            return true; // show all records
+                                        },
+                                        function(contacts) {
+                                            var html = '<table width="100%" align="left" valign="top">';
+
+                                            var passed = 0, failed = 0, all = 0;
+
+                                            for (var i = 0; i < contacts.length; i++) {
+                                                var contact = contacts[i];
+                                                all += 1;
+                                                if (passFailLex(fieldValue(contact, ProficiencyField)) == 0) {
+                                                    passed += 1;
+                                                } else {
+                                                    failed += 1;
+                                                }
+                                            }
+                                                    
+                                            html += '<tr align="center"><td width="20%">Total</td><td width="20%">Passed</td><td width="20%">Failed</td><td width="20%">Passing %</td></tr>';
+                                            html += '<tr align="center"><td width="20%">%s</td><td width="20%">%s</td><td width="20%">%s</td><td width="20%">%s%</td></tr>'.format(all, passed, failed, (passed / all)*100);
+                                            html += "</table>";
+                                            return html;
+                                        }),
     'Checked In for Lesson'     : new SavedSearch('contacts',
                                         "('Status' eq 'Active' AND 'TripCheckInLesson' ne NULL)", 
                                         selectBasicFields, 
                                         sortAlphabetically),
-    
-                                        
     'Violations'                : new SavedSearch('contacts',
                                         "('Status' eq 'Active' AND 'TripViolationDate' ne NULL)",
                                         selectBasicFields, 
-                                        sortAlphabetically),
-
+                                        sortAlphabetically, 
+                                        violationFormatter,
+                                        ),
     'Missed Lunch Check In'     : new SavedSearch('contacts',
                                         "('Status' eq 'Active' AND 'TripCheckInMorning' ne NULL and 'TripCheckInLunch' eq NULL)",
                                         selectBasicFields, 
                                         sortAlphabetically),
-
     // return 1 to include the record, 0 to exclude it
     'All Students' : new SavedSearch('contacts',
                                         "('Status' eq 'Active') AND 'MembershipLevelId' eq " + MembershipLevelStudent,
                                         selectBasicFields, 
                                         sortAlphabetically),
-
     'All Siblings' : new SavedSearch('contacts',
                                         "('Status' eq 'Active') AND 'MembershipLevelId' eq " +  MembershipLevelSibling,
                                         selectBasicFields, 
                                         sortAlphabetically),
-
     'All Chaperones' : new SavedSearch('contacts',
                                         "('Status' eq 'Active') AND 'MembershipLevelId' eq " + MembershipLevelChaperone,
                                         selectBasicFields, 
@@ -190,7 +324,7 @@ function todaysEvents(api, callback) {
             console.log('list', data);
 
             var todaysEvents = [];
-            var today = new Date().toJSON().slice(0,10);
+            var today = $.todayOverride || new Date().toJSON().slice(0,10);
             var events = data.Events;
             for (i=0; i < events.length; i++) {
                 var event = events[i];

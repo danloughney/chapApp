@@ -68,6 +68,7 @@ function saveForm() {
         { fieldName:TripTestDate, value: FLSCformatDate(new Date()) }
     ];
     
+    var notes = document.getElementById("notes").value;
     if (notes != undefined && notes != '') {
         notes = FLSCformatComment(fieldValue($.data, TripChapNotes), notes, $.chapName);
         fieldValues.push({ fieldName: TripChapNotes, value: notes });
@@ -87,16 +88,15 @@ function saveForm() {
 function resetCertification() {
     // removes all values from the testing field. Does accept comment if Chap wants to say why they did this.
 
+    if (!confirm("WARNING: This will REMOVE all testing info for %s. Do you want to continue?".format(FLSCformatMemberName($.data)))) {
+        return;
+    }
+
     var fieldValues = [ 
         { fieldName:ProficiencyField, value: [ ] },
         { fieldName:TripTestDate, value: null },
     ];
-    
-    if (notes != undefined && notes != '') {
-        notes = FLSCformatComment(fieldValue($.data, TripChapNotes), notes, $.chapName);
-        fieldValues.push({ fieldName: TripChapNotes, value: notes });
-    }
-    
+        
     FLSCputMemeberData($.api, $.memberID, fieldValues, 
         function(fieldValues, textStatus) {
             FLSCwindowAlert('Certification reset successfully');

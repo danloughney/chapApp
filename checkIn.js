@@ -22,7 +22,7 @@ function openCallback(memberData) {
             var membershipLevel = memberData.MembershipLevel.Name;
 
             var todaysEvents = [];
-            var today = new Date().toJSON().slice(0,10);
+            var today = $.todayOverride || new Date().toJSON().slice(0,10);
             var events = data.Events;
             for (i=0; i < events.length; i++) {
                 var event = events[i];

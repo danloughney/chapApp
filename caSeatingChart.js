@@ -67,21 +67,21 @@ function executeQuery(busNumber) {
         }
     });
 
-    sgGetBusCaptain(busNumber, function(data) {
-        var contacts = data.Contacts;
-        var html = '<table width="100%">';
+    // sgGetBusCaptain(busNumber, function(data) {
+    //     var contacts = data.Contacts;
+    //     var html = '<table width="100%">';
 
-        if (contacts.length == 0) {
-            document.getElementById('captainInfo').innerHTML = 'No Captain Identified';           
-            return; 
-        }
+    //     if (contacts.length == 0) {
+    //         document.getElementById('captainInfo').innerHTML = 'No Captain Identified';           
+    //         return; 
+    //     }
 
-        for (var i = 0; i < contacts.length; i++) {
-            html += '<tr><td width="30%">%s</td><td width="70%"><button class="btnRed" onclick="FLSCcall(\'%s\');">Call</button></td></tr>'.format(FLSCformatChapName(contacts[i]), fieldValue(contacts[i], 'Cell Phone'));
-        }
-        html += "</table>";
-        document.getElementById('captainInfo').innerHTML = html;
-    });
+    //     for (var i = 0; i < contacts.length; i++) {
+    //         html += '<tr><td width="30%">%s</td><td width="70%"><button class="btnRed" onclick="FLSCcall(\'%s\');">Call</button></td></tr>'.format(FLSCformatChapName(contacts[i]), fieldValue(contacts[i], 'Cell Phone'));
+    //     }
+    //     html += "</table>";
+    //     document.getElementById('captainInfo').innerHTML = html;
+    // });
 }
 
 function renderRow(rowType, rowNumber, className) {

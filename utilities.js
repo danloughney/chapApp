@@ -7,11 +7,13 @@
 const FLSCphoto = "Photo";
 const FLSCclientID = "8jc86buyhc";
 const clubBaseURL = 'https://foxlaneskiclub.wildapricot.org';
+const FLSCHotline = '805-635-7669';
 
 // trip configurations
 const maxRowsPerBus = 16;
 const maxBusesPerTrip = 5;
-
+$.todayOverride = '2020-01-20'; // undefined; // set to undefined for production
+ 
 // field value definitions
 const MembershipLevelChaperone = 1088585;
 const MembershipLevelStudent = 1089064;
@@ -205,9 +207,32 @@ function FLSCformatComment(currentComment, comment, chapName) {
         currentComment;
 }
 
-function FLSCwindowAlert(text) {
+function timedAlert(msg,completion)
+{
+    var el = document.createElement("div");
+    el.setAttribute("style", "margin:20;color:white;background:dimgray;position:absolute;top:50%;left:50%;margin-right: -50%;transform:translate(-50%, -50%);border-radius:4px;");
+    //el.setAttribute("style", "margin:5;color:white;background:dimgray;position:absolute;height:100%;width:100%;bottom:0;align-content:center;border-radius:4px;");
+
+    el.innerHTML = "&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;%s&nbsp;&nbsp;&nbsp;&nbsp;<br>&nbsp;".format(msg);
+    document.body.appendChild(el);
+
+    setTimeout(function(){
+        el.parentNode.removeChild(el);
+        if (completion != undefined) {
+            completion();
+        }
+    },2600);
+    
+}
+
+function FLSCwindowAlert(text, completion) {
+    // pass a completion fn and we will make this a timed alert. regular alert otherwise.
     if ($.testHarness == undefined) {
-        window.alert(text);
+        if (completion != undefined) {
+            timedAlert(text, completion);
+        } else {
+            window.alert(text);
+        }
     } else {
         console.log('ALERT:' + text);
     }
@@ -229,6 +254,10 @@ function FLSCcall(phoneNumber) {
     //c.back();
 }
 
+function FLSCcallHotline() {
+    FLSCcall(FLSCHotline);
+}
+
 function FLSCsms(phoneNumber) {
     if (phoneNumber.startsWith('1')) {
         phoneNumber = 'sms:+' + phoneNumber;
@@ -243,3 +272,4 @@ function FLSCsms(phoneNumber) {
 function radioSelection(radioName, optionName) {
     return '<input id="%s" type="radio" name="%s" id="%s" value="%s">\n<label for="%s">%s</label><br>'.format(radioName, radioName, optionName, optionName, optionName, optionName);
 }
+

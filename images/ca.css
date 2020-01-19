@@ -72,20 +72,21 @@
   vertical-align: top;
 }
 
-.qrcode-text-btn {
+.home-btn {
   display: inline-block;
   height: 3em;
   width: 3em;
-  background: url(qrIcon.svg) 50% 50% no-repeat;
+  background: url(home.svg) 50% 50% no-repeat;
   cursor: pointer;
 }
 
-.home-btn {
+.phone-btn {
   display: inline-block;
-  height: 2.8em;
+  height: 3em;
   width: 3em;
-  background: url(home.svg) 50% 50% no-repeat;
+  background: url(phone.svg) 50% 50% no-repeat;
   cursor: pointer;
+  vertical-align: top;
 }
 
 .firstAid-btn {
@@ -93,6 +94,14 @@
   height: 3em;
   width: 3em;
   background: url(firstAid.svg) 50% 50% no-repeat;
+  cursor: pointer;
+}
+
+.qrcode-text-btn {
+  display: inline-block;
+  height: 3em;
+  width: 3em;
+  background: url(qrIcon.svg) 50% 50% no-repeat;
   cursor: pointer;
 }
 

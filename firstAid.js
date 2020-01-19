@@ -4,18 +4,15 @@
 * chapApp home page
 */
 
-function formatMemberFirstAid(contact) {
-    return "<tr><td><a href='%s'>%s, %s</a><br>%s</td></tr>".format(memberFirstAid(contact.Id), contact.LastName, contact.FirstName, contact.Id);
-}
 
 document.addEventListener("DOMContentLoaded", function() {
-    $.listName = listFirstAid;
-    document.getElementById('listName').innerHTML = $.listName;
-
+    
     $.api = new WApublicApi(FLSCclientID);
     $.when($.api.init()).done(function() {
-        var html = '<table>';
-        search = searches[$.listName];
+        $.listName = listFirstAid;
+        document.getElementById('listName').innerHTML = $.listName;
+        var search = searches[$.listName];
+
         $.api.apiRequest({
             apiUrl: $.api.apiUrls.contacts({ '$filter' : search.filter, 
                                              //'$sort'   : search.sorter, 
@@ -27,12 +24,29 @@ document.addEventListener("DOMContentLoaded", function() {
             
                 contacts.sort(search.sorter || { } );
 
+                var html = '<table width="100%"><tr><td></td></tr><tr><td width="80%"><table>';
+                var lastLabel = '';
+                var labelList = [];
+        
                 for (var i = 0; i < contacts.length; i++) {
                     resultCount ++;
-                    html += formatMemberFirstAid(contacts[i]);
+
+                    var name = contacts[i].LastName;
+                    if (lastLabel != name.substring(0, 1).toUpperCase()) {
+                        lastLabel = name.substring(0, 1).toUpperCase();
+                        labelList.push(lastLabel);
+                        html += '<tr><td align="center"><b>%s</b><a id=%s></a><td></tr>'.format(lastLabel, lastLabel);
+                    }
+    
+                    html += search.formatter(contacts[i]);
                 }
 
-                html += '</table>'
+                var indexHtml = ''; 
+                for (var i = 0;i<labelList.length; i++) {
+                    indexHtml += '<a href="#%s">%s</a><br>'.format(labelList[i], labelList[i]);
+                 }
+                 html += '</table><td valign="top" align="center">%s</td></tr></table>'.format(indexHtml);
+             
                 document.getElementById('listResults').innerHTML = html;
                 document.getElementById('listCount').innerHTML = resultCount + ' Result' + (resultCount == 1 ? '' : 's');
 
@@ -42,6 +56,31 @@ document.addEventListener("DOMContentLoaded", function() {
             }
         });
        
+        // look for injuries
+        var injurySearch = searches[listInjury];
+        $.api.apiRequest({
+            apiUrl: $.api.apiUrls.contacts({ '$filter' : injurySearch.filter
+            }),
+            success: function (data, textStatus, jqXhr) {
+                var resultCount = 0;
+                var contacts = data.Contacts;
+            
+                contacts.sort(injurySearch.sorter || { } );
+
+                var html = '<table>';        
+                for (var i = 0; i < contacts.length; i++) {
+                    resultCount ++;    
+                    html += injurySearch.formatter(contacts[i]);
+                }
+             
+                document.getElementById('injuryResults').innerHTML = html;
+                document.getElementById('injuryCount').innerHTML = resultCount + ' Result' + (resultCount == 1 ? '' : 's');
+
+            },
+            error: function (data, textStatus, jqXhr) {
+                document.getElementById('injuryResults').innerHTML = html = 'failed getting injury list: ' + textStatus;
+            }
+        });
         return false;
     });
 });

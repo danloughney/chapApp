@@ -53,14 +53,17 @@ function openCallback(memberData) {
 
                         // display lesson info
                         var registration = data[0];
+                        $.lessonOption == '';
                         for (i=0; i < registration.RegistrationFields.length; i++) {
                             if (registration.RegistrationFields[i].FieldName == "Lesson Options") {
-                                $.lessonOption = registration.RegistrationFields[i].Value.Label;
-                                appendMemberName($.lessonOption);
-                            } else {
-                                if ($.checkInType == pageLesson) {
-                                    alert('WARNING: Member is NOT registered for a lesson');
-                                }
+                                $.lessonOption = registration.RegistrationFields[i].Value.Label || "No Lesson";
+                                appendMemberName('Lesson: ' + $.lessonOption);
+                                break;
+                            }
+                        }
+                        if ($.lessonOption == '' || $.lessonOption == "No Lesson") {
+                            if ($.checkInType == pageLesson) {
+                                alert('WARNING: Member is NOT registered for a lesson');
                             }
                         }
                     }

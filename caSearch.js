@@ -5,8 +5,10 @@
 */
 
 class SavedSearch {
-    constructor(entity, filter, selector, sorter, formatter, includeFn, summaryFn) {
+    constructor(name, entity, helpText, filter, selector, sorter, formatter, includeFn, summaryFn) {
+        this.name = name;
         this.entity = entity;
+        this.helpText = helpText;
         this.filter = filter;
         this.selector = selector;
         this.sorter = sorter;
@@ -29,12 +31,38 @@ class SavedSearch {
     }
 }
 
+class BusReport {
+    constructor(busNumber) {
+        this.busNumber = busNumber;
+        this.total = 0;
+        this.students = 0;
+        this.siblings = 0;
+        this.chaperones = 0;
+        this.lessons = { };
+    }
+
+    add(busReport) {
+        this.total += busReport.total;
+        this.students += busReport.students;
+        this.siblings += busReport.siblings;
+        this.chaperones += busReport.chaperones;
+        for (var key in busReport.lessons) {
+            if (this.lessons[key] == undefined) {
+                this.lessons[key] = busReport.lessons[key];
+            } else {
+                this.lessons[key] += busReport.lessons[key];
+            }
+        }
+    }
+}
+
 const listTodayTrip = "Registered for Today's Trip";
 const listCheckedInTodayTrip = "Checked In on Bus";
 const listViolation = "Violations";
 const listInTesting = "Checked In for Testing";
 const listTestResults = 'Testing Results';
-const listMissedLunch = 'Missed Lunch Check In';
+const listTestingRegistration = 'Testing Registration';
+const listMissedLunch = 'Lunch Check In';
 const listFirstAid = 'First Aid';
 const listInjury = 'Injuries';
 const listBusReport = 'Bus Report';
@@ -48,8 +76,6 @@ const lists = [
     listTodayTrip,
     listCheckedInTodayTrip,
     listLessons,
-    listInTesting,
-    listTestResults,
     listMissedLunch,
     listViolation,
     listInjury,
@@ -61,7 +87,14 @@ const lists2 = [
     listAllChaperones,
 ];
 
-const filterCheckedIn = "('Status' eq 'Active' AND 'TripCheckInMorning' ne NULL)";
+const testingList = [
+    listTestingRegistration,
+    listInTesting,
+    listTestResults,
+  
+];
+
+const filterCheckedIn = "('Status' eq 'Active' AND 'TripCheckInMorning' ne NULL AND 'TripCheckInMorning' ne '')";
 const selectBasicFields = "'Last Name','First Name','Id";
 
 const sortAlphabetically = function(a, b) {
@@ -165,7 +198,53 @@ function passFail(proficiencyArray) {
     return 'Failed';
 }
 
+
+function lunchRegistrationFormatter(contact) {
+    var busNumber = fieldValue(contact, TripBusNumber);
+    if (busNumber != undefined && busNumber != '') {
+        return "<tr><td><a href='%s'>%s, %s</a><br>Bus %s Seat %s</td></tr>".format(
+            checkInURL(pageLunch, contact.Id),
+            contact.LastName, contact.FirstName, 
+            fieldValue(contact, TripBusNumber), fieldValue(contact, TripBusSeat)
+        );    
+    }
+    return "<tr><td><a href='%s'>%s, %s</a></td></tr>".format(
+        checkInURL(pageLunch, contact.Id),
+        contact.LastName, contact.FirstName, 
+    );
+};
+
+function testingRegistrationFormatter(contact) {
+    var busNumber = fieldValue(contact, TripBusNumber);
+    if (busNumber != undefined && busNumber != '') {
+        return "<tr><td><a href='%s'>%s, %s</a><br>Bus %s Seat %s</td></tr>".format(
+            checkInURL(pageTesting, contact.Id),
+            contact.LastName, contact.FirstName, 
+            fieldValue(contact, TripBusNumber), fieldValue(contact, TripBusSeat)
+        );    
+    }
+    return "<tr><td><a href='%s'>%s, %s</a></td></tr>".format(
+        checkInURL(pageTesting, contact.Id),
+        contact.LastName, contact.FirstName, 
+    );
+};
+
 function testingFormatter(contact) {
+    var busNumber = fieldValue(contact, TripBusNumber);
+    if (busNumber != undefined && busNumber != '') {
+        return "<tr><td><a href='%s'>%s, %s</a><br>Bus %s Seat %s</td></tr>".format(
+            checkInURL(pageCertification, contact.Id),
+            contact.LastName, contact.FirstName, 
+            fieldValue(contact, TripBusNumber), fieldValue(contact, TripBusSeat)
+        );    
+    }
+    return "<tr><td><a href='%s'>%s, %s</a></td></tr>".format(
+        checkInURL(pageTesting, contact.Id),
+        contact.LastName, contact.FirstName, 
+    );
+};
+
+function testingResultsFormatter(contact) {
     var busNumber = fieldValue(contact, TripBusNumber);
     if (busNumber != undefined && busNumber != '') {
         return "<tr><td><a href='%s'>%s, %s</a><br>Bus %s Seat %s<br>%s</td></tr>".format(
@@ -182,79 +261,74 @@ function testingFormatter(contact) {
 };
 
 const searches = {
-    'Registered for Today\'s Trip' : new SavedSearch('registrations',
+    'Registered for Today\'s Trip' : new SavedSearch('Registered for Today\'s Trip', 
+                                        'registrations',
+                                        'All students, siblings, and chaperones who are registered for today\'s trip.',
                                         filterCheckedIn, 
                                         selectBasicFields, 
-                                        sortAlphabetically),
+                                        function(a, b) {
+                                            if (a == undefined && b != undefined) {
+                                                return -1;
+                                            } 
+                                            if (a != undefined && b == undefined) { 
+                                                return 1;
+                                            }
+                                            if (a == undefined && b == undefined) {
+                                                return 0;
+                                            }
+                                        
+                                            var x = a.DisplayName.toLowerCase();
+                                            var y = b.DisplayName.toLowerCase();
+                                            return x < y ? -1 : x > y ? 1 : 0;
+                                        }),
 
-    'Checked In on Bus' : new SavedSearch('contacts',
+    'Checked In on Bus' : new SavedSearch('Checked In on Bus', 
+                                        'contacts',
+                                        'Everyone who has checked in on the morning bus.',
                                         filterCheckedIn, // change this
                                         selectBasicFields, 
                                         sortAlphabetically),
 
-    'First Aid'     : new SavedSearch('contacts',
+    'First Aid'     : new SavedSearch('First Aid', 
+                                        'contacts',
+                                        'Who is on the trip for the First Aid team.',
                                         filterCheckedIn, 
                                         selectBasicFields,
                                         sortAlphabetically),
 
-    'Injuries'      : new SavedSearch('contacts',
+    'Injuries'      : new SavedSearch('Injuries', 
+                                        'contacts',
+                                        'Report of people with injuries.',
                                         "('Status' eq 'Active' and 'First Aid Notes' ne NULL)", 
                                         selectBasicFields,
                                         sortAlphabetically,
                                         injuryFormatter),
 
-    'Bus Report'    : new SavedSearch('contacts',
-                                        filterCheckedIn, 
-                                        selectBasicFields,
-                                        sortBySeat, 
-                                        undefined, // default formatter
-                                        function() { 
-                                            return false; // only need the summary
-                                        },
-                                        function(contacts) {
-                                            var html = '<table width="100%" align="left" valign="top">';
-                                            var bus = 1, count = 0, sibCount = 0, studentCount = 0, chapCount = 0,
-                                                         allCount = 0, allSibCount = 0, allStudentCount = 0, allChapCount = 0;
-
-                                            for (var i = 0; i < contacts.length; i++) {
-                                                var contact = contacts[i];
-                                                if (fieldValue(contact, TripBusNumber) == bus) {
-                                                    count ++;
-                                                    switch(contact.MembershipLevel.Name) {
-                                                        case 'Student':
-                                                            studentCount ++;
-                                                            break;
-                                                        case 'Chaperone':
-                                                            chapCount ++;
-                                                            break;
-                                                        case 'Sibling':
-                                                            sibCount ++;
-                                                            break;
-                                                    }
-                                                } else {
-                                                    html += '<tr><td width="20%">Bus %s</td><td width="20%">All %s</td><td width="20%">Students %s</td><td width="20%">Sibs %s</td><td width="20%">Chaps %s</td></tr>'.format(bus, count, studentCount, sibCount, chapCount);
-                                                    bus ++;
-                                                    allCount += count, allSibCount += sibCount, allStudentCount += studentCount, allChapCount += chapCount;
-                                                    count = 0, sibCount = 0, studentCount = 0, chapCount = 0;
-                                                }
-                                            }
-                                            allCount += count, allSibCount += sibCount, allStudentCount += studentCount, allChapCount += chapCount;
-                                                    
-                                            html += '<tr><td width="20%">Bus %s</td><td width="20%">All %s</td><td width="20%">Students %s</td><td width="20%">Sibs %s</td><td width="20%">Chaps %s</td></tr>'.format(bus, count, studentCount, sibCount, chapCount);
-                                            html += '<tr><td>&nbsp;</td></tr><tr><td width="20%">Total</td><td width="20%">All %s</td><td width="20%">Students %s</td><td width="20%">Sibs %s</td><td width="20%">Chaps %s</td></tr>'.format(allCount, allStudentCount, allSibCount, allChapCount);
-                                            html += "</table>";
-                                            return html;
-                                        }),
+    'Testing Registration'      : new SavedSearch('Testing Registration',
+                                        'contacts',
+                                        'Restricted students on today\'s trip. Use this page to check students in for mountain testing.', 
+                                        "'Status' eq 'Active' AND 'TripCheckInMorning' ne NULL AND " + 
+                                            "('TripCheckInTesting' eq NULL OR 'TripCheckInTesting' eq '') AND " +
+                                            "('Member Status' eq '12483746' OR 'Member Status' eq '12483747' OR 'Member Status' eq '12483748' OR 'Member Status' eq '12483749' OR 'Member Status' eq '12483750')",
+                                        selectBasicFields, 
+                                        sortAlphabetically, 
+                                        testingRegistrationFormatter),
         
-    'Checked In for Testing'    : new SavedSearch('contacts',
+    'Checked In for Testing'    : new SavedSearch('Checked In for Testing', 
+                                        'contacts',
+                                        'Students checked in for testing, but who haven\'t tested yet.',
                                         "('Status' eq 'Active' AND 'TripCheckInTesting' ne NULL AND 'TripTestDate' eq NULL)", 
                                         selectBasicFields, 
-                                        sortByTestingCheckin),
-    'Testing Results'           : new SavedSearch('contacts', 
+                                        sortByTestingCheckin, 
+                                        testingFormatter),
+
+    'Testing Results'           : new SavedSearch('Testing Results',
+                                        'contacts', 
+                                        'Students that have taken the mountain test.',
                                         "'Status' eq 'Active' and  substringof('TripTestDate', '%s')".format($.todayOverride || new Date().toJSON().slice(0,10)),
                                         selectBasicFields, 
                                         sortByPassFailAlpha,
-                                        testingFormatter,
+                                        testingResultsFormatter,
                                         function() { 
                                             return true; // show all records
                                         },
@@ -278,33 +352,117 @@ const searches = {
                                             html += "</table>";
                                             return html;
                                         }),
-    'Checked In for Lesson'     : new SavedSearch('contacts',
+
+    'Checked In for Lesson'     : new SavedSearch('Checked In for Lesson', 
+                                        'contacts',
+                                        'Students that have checked in for their lesson.',
                                         "('Status' eq 'Active' AND 'TripCheckInLesson' ne NULL)", 
                                         selectBasicFields, 
                                         sortAlphabetically),
-    'Violations'                : new SavedSearch('contacts',
+                                        
+    'Violations'                : new SavedSearch('Violations', 
+                                        'contacts',
+                                        'Report of members with violations on today\'s trip.',
                                         "('Status' eq 'Active' AND 'TripViolationDate' ne NULL)",
                                         selectBasicFields, 
                                         sortAlphabetically, 
                                         violationFormatter,
                                         ),
-    'Missed Lunch Check In'     : new SavedSearch('contacts',
-                                        "('Status' eq 'Active' AND 'TripCheckInMorning' ne NULL and 'TripCheckInLunch' eq NULL)",
+
+    'Lunch Check In'     : new SavedSearch('Lunch Check In', 
+                                        'contacts',
+                                        'Students and Siblings who have not checked in for lunch.',
+                                        "('Status' eq 'Active' AND 'TripCheckInMorning' ne NULL and 'TripCheckInLunch' eq NULL AND 'MembershipLevelId' ne %s)".format(MembershipLevelChaperone),
                                         selectBasicFields, 
-                                        sortAlphabetically),
+                                        sortAlphabetically, 
+                                        lunchRegistrationFormatter),
+
     // return 1 to include the record, 0 to exclude it
-    'All Students' : new SavedSearch('contacts',
+    'All Students' : new SavedSearch('All Students', 
+                                        'contacts',
+                                        'All active FLSC student members',
                                         "('Status' eq 'Active') AND 'MembershipLevelId' eq " + MembershipLevelStudent,
                                         selectBasicFields, 
                                         sortAlphabetically),
-    'All Siblings' : new SavedSearch('contacts',
+
+    'All Siblings' : new SavedSearch('All Siblings',
+                                        'contacts',
+                                        'All active FLSC sibling members',
                                         "('Status' eq 'Active') AND 'MembershipLevelId' eq " +  MembershipLevelSibling,
                                         selectBasicFields, 
                                         sortAlphabetically),
-    'All Chaperones' : new SavedSearch('contacts',
-                                        "('Status' eq 'Active') AND 'MembershipLevelId' eq " + MembershipLevelChaperone,
-                                        selectBasicFields, 
-                                        sortAlphabetically),
+
+    'All Chaperones' : new SavedSearch('All Chaperones', 
+            'contacts',
+            'all active FLSC chaperones',
+            "('Status' eq 'Active') AND 'MembershipLevelId' eq " + MembershipLevelChaperone,
+            selectBasicFields, 
+            sortAlphabetically),
+
+    'Bus Report'    : new SavedSearch('Bus Report',
+            'contacts',
+            'Summary of students, siblings, chaperones, with lessons, by bus. Export data and send to the mountain.',
+            filterCheckedIn, 
+            selectBasicFields,
+            sortBySeat, 
+            undefined, // default formatter
+            function() { 
+                return false; // only need the summary
+            },
+            function(contacts) {
+                var bus = 1;
+                var busReport = new BusReport(bus);
+                var buses = [];
+                buses.push(busReport);
+
+                var lessonsByBus = { };
+
+                for (var i = 0; i < contacts.length; i++) {
+                    var contact = contacts[i];
+                    
+                    if (fieldValue(contact, TripBusNumber) == bus) {
+                        busReport.total ++;
+
+                        switch(contact.MembershipLevel.Name) {
+                            case 'Student':
+                                busReport.students ++;
+                                break;
+                            case 'Chaperone':
+                                busReport.chaperones ++;
+                                break;
+                            case 'Sibling':
+                                busReport.siblings ++;
+                                break;
+                            default:
+                                console.log('incorrect membership level', contact.MembershipLevel.Name);
+                        }
+
+                        var lesson = fieldValue(contact, TripConfirmedLesson);
+                        if (lesson != undefined && lesson != '') {
+                            var lcount = lessonsByBus[lesson];
+                            if (lcount == undefined) {
+                                lcount = 1;
+                            } else {
+                                lcount += 1;
+                            }
+                            lessonsByBus[lesson] = lcount;
+                        }        
+                    } else {
+                        busReport.lessons = lessonsByBus;
+                        lessonsByBus = { };
+                        bus ++;
+                        busReport = new BusReport(bus);
+                        buses.push(busReport);
+                        --i; // reset i to count the person with code above
+                    }
+                }
+                busReport.lessons = lessonsByBus;
+
+                var exportCode='<button onclick="exportCSV();" class="btnRed">Export</button><div id="csvData" hidden=true>%s</div>'.format(busReportCSV(buses));
+                document.getElementById('export').innerHTML = exportCode;
+                return busReportHTML(buses);
+            }),
+
 
   };
 
@@ -344,4 +502,132 @@ function todaysEvents(api, callback) {
             //document.getElementById('listResults2').innerHTML = html = 'failed getting search result: ' + textStatus;
         }
     });
+}
+
+
+function allLessons(buses) {
+    // get unique list of lesson names in use on this trip.
+    var lessonTypes = [];
+
+    for (var i = 0; i < buses.length; i++) {
+        for (key in buses[i].lessons) {
+            if (!(lessonTypes.includes(key))) {
+                lessonTypes.push(key);
+            }
+        }
+    }
+    return lessonTypes.sort();
+}
+
+function busReportHTMLOld(buses) {
+    var totals = new BusReport(0);
+    var lessonTypes = allLessons(buses);
+
+    var html = '<table width="100%" align="left" valign="top">';
+    for (var i = 0; i < buses.length; i++) {
+        totals.add(buses[i]);
+        
+        html += '<tr><td width="20%">Bus %s</td><td width="20%">All %s</td><td width="20%">Students %s</td><td width="20%">Sibs %s</td><td width="20%">Chaps %s</td></tr>'.format(buses[i].busNumber, buses[i].total, buses[i].students, buses[i].siblings, buses[i].chaperones);
+
+        for (var j = 0; j <lessonTypes.length; j++) {
+            if (buses[i].lessons[lessonTypes[j]] != undefined) {
+                html += '<tr><td>&nbsp;&nbsp;%s&nbsp;%s</td></tr>'.format(lessonTypes[j], buses[i].lessons[lessonTypes[j]]);
+            }
+        }
+    }
+    html += '<tr><td width="20%">%s</td><td width="20%">All %s</td><td width="20%">Students %s</td><td width="20%">Sibs %s</td><td width="20%">Chaps %s</td></tr>'.format('All', totals.total, totals.students, totals.siblings, totals.chaperones);
+    html += '</table>';
+    return html;            
+}
+
+const newline = '\r\n'; //'%0D%0A';
+
+function lessonCount(lessons, lessonType) {
+    if (lessons[lessonType] != undefined) {
+        return lessons[lessonType];  
+    } 
+    return 0;
+}
+
+function busReportCSV(buses) {
+    var totals = new BusReport(0);
+    var lessonTypes = allLessons(buses);
+    var csv = 'bus, total, students, siblings, chaperones,';
+    for (var i = 0; i < lessonTypes.length; i++) {
+        csv += "%s, ".format(lessonTypes[i]);
+    }
+    csv += newline;
+
+    var data = '';
+    for (i = 0; i < buses.length; i++) {
+        totals.add(buses[i]);
+
+        data = '%s, %s, %s, %s, %s, '.format(buses[i].busNumber, buses[i].total, buses[i].students, buses[i].siblings, buses[i].chaperones);
+
+        for (var j = 0; j < lessonTypes.length; j++) {
+            data += "%s, ".format(lessonCount(buses[i].lessons, lessonTypes[j]));
+        }
+        csv += data + newline;
+    }
+    data = 'Total, %s, %s, %s, %s, '.format(totals.total, totals.students, totals.siblings, totals.chaperones);
+    for (var j = 0; j < lessonTypes.length; j++) {
+        data += "%s, ".format(lessonCount(totals.lessons, lessonTypes[j]));
+    }
+    csv += data + newline;
+
+    return csv;
+}
+
+function td(value) {
+    return '<td align="center">%s</td>'.format(value);
+}
+
+function th(value) {
+    return '<th width="10%" align="center">%s</th>'.format(value);
+}
+
+function busReportHTML(buses) {
+    var totals = new BusReport(0);
+    var lessonTypes = allLessons(buses);
+
+    var html = '<table width="100%" align="left" valign="top">';
+    html += '<tr>%s%s%s%s%s'.format(th('Bus'), th('All'), th('Students'), th('Siblings'), th('Chaperones'));
+    for (var i = 0; i < lessonTypes.length; i++) {
+        html += th(lessonTypes[i]);
+    }
+    html += '</tr>';
+
+    for (i = 0; i < buses.length; i++) {
+        totals.add(buses[i]);
+
+        html += '<tr>%s%s%s%s%s'.format(td(buses[i].busNumber), td(buses[i].total), td(buses[i].students), td(buses[i].siblings), td(buses[i].chaperones));
+        for (var j = 0; j < lessonTypes.length; j++) {
+            html += td(lessonCount(buses[i].lessons, lessonTypes[j]));
+        }
+        html += '</tr>';
+    }
+
+    html += '<tr><td>&nbsp;</td></tr>';
+    html += '<tr>%s%s%s%s%s'.format(td("Totals"), td(totals.total), td(totals.students), td(totals.siblings), td(totals.chaperones));
+    for (j = 0; j < lessonTypes.length; j++) {
+        html += td(lessonCount(totals.lessons, lessonTypes[j]));
+    }
+    html += '</tr></table>';
+
+    return html;
+}
+
+function exportCSV() {
+
+    var hiddenElement = document.createElement('a');
+    hiddenElement.href = 'data:text/csv;charset=utf-8,' + encodeURI(document.getElementById('csvData').innerHTML);
+    console.log(hiddenElement.href);
+
+    hiddenElement.setAttribute("download", "flscTickets.csv");
+    hiddenElement.target = '_blank';
+    document.body.appendChild(hiddenElement); // Required for for (const iterator of object)
+    hiddenElement.click();
+
+//    document.location = "mailto:info@foxlaneskiclub.com?subject=Ticket Order for Fox Lane Ski Club&body="+document.getElementById('csvData').innerHTML;
+
 }

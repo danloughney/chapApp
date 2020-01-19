@@ -6,11 +6,11 @@
 const TripCheckInMorning = "TripCheckInMorning";
 const TripBusNumber = "TripBusNumber";
 const TripBusSeat = "TripBusSeat";
+const TripConfirmedLesson = 'TripConfirmedLesson';
 const TripCheckInLunch = "TripCheckInLunch";
 const TripCheckInDepart = "TripCheckInDepart";
 const TripCheckInLesson = "TripCheckInLesson";
 const TripCheckInTesting = "TripCheckInTesting";
-const TripCertificationNotes = "TripCertificationNotes"; // ??
 const TripChapNotes = "TripChapNotes";
 const TripViolationDate = "TripViolationDate";
 const TripViolationNotes = "TripViolationNotes";
@@ -20,7 +20,7 @@ const TripDetentionFlag = 'Detention?';
 const TripDetentionNotes = 'Detention Explanation';
 const ProficiencyField = 'Proficiency Test Pass?'; 
 const TripTestDate = 'TripTestDate';
-const TripBusCaptain = 'TripBusCaptain'
+const TripBusCaptain = 'TripBusCaptain';
 
 const fieldCellPhone = "Cell Phone";
 const detentionRequired = 12555903;
@@ -47,39 +47,40 @@ const pageTripMap = { 'AM' : TripCheckInMorning,
                       'Violation' : TripViolationNotes,
                     };
 
-
-$.nextPage = function(pageType) {
+function checkInURL(pageType, Id) {
     var nextPage = '';
 
     switch(pageType) {
         case pageCheckInAM:
-            nextPage = '%s/morningCheckIn?ID=%s&type=%s'.format(clubBaseURL, $.data.Id, pageType);
-            break;
+            return '%s/morningCheckIn?ID=%s&type=%s'.format(clubBaseURL, Id, pageType);
 
         // check in for lunch, lesson, testing, etc.
         case pageLunch:
         case pageLesson:
         case pageDepart:
         case pageTesting:
-            nextPage = '%s/checkIn?ID=%s&type=%s'.format(clubBaseURL, $.data.Id, pageType);
-            break;
+            return '%s/checkIn?ID=%s&type=%s'.format(clubBaseURL, Id, pageType);
 
         case pageCertification://doesn't exist yet
-            nextPage = '%s/testingEval?ID=%s&type=%s'.format(clubBaseURL, $.data.Id, pageType);
-            break;
+            return '%s/testingEval?ID=%s&type=%s'.format(clubBaseURL, Id, pageType);
          
         case pageFirstAid:
         case pageViolation:
         case pageNotes:
-            nextPage = '%s/reportEvent?ID=%s&type=%s'.format(clubBaseURL, $.data.Id, pageTripMap[pageType]);                
-            break;
+            return '%s/reportEvent?ID=%s&type=%s'.format(clubBaseURL, Id, pageTripMap[pageType]);
 
         default:
-            window.alert("Choose a correct pageType");
-    }
+            return '';
+    }    
+}
+
+$.nextPage = function(pageType) {
+    var nextPage = checkInURL(pageType, $.data.Id);
+
     if (nextPage != '') {
         window.location.href=nextPage;
     }
+
 }
 
 function sgGetChapInfo() {
@@ -233,11 +234,12 @@ function FLSCputMemeberData(api, memberID, fieldValues, fSuccess, fError) {
 }
 
 
-function FLSCcheckInAM(api, memberID, busNumber, busSeat, notes) {
+function FLSCcheckInAM(api, memberID, busNumber, busSeat, lessonOption, notes) {
     var fieldValues = [ 
         { fieldName:TripCheckInMorning, value: FLSCformatDate(new Date()) },
         { fieldName:TripBusNumber, value: busNumber },
-        { fieldName:TripBusSeat, value: busSeat }
+        { fieldName:TripBusSeat, value: busSeat },
+        { fieldName:TripConfirmedLesson, value: lessonOption },
     ];
 
     if (notes != undefined && notes != '') {
@@ -247,8 +249,7 @@ function FLSCcheckInAM(api, memberID, busNumber, busSeat, notes) {
 
     FLSCputMemeberData(api, memberID, fieldValues, 
         function(fieldValues, textStatus) {
-            FLSCwindowAlert('Check in successful. Bus ' + busNumber + ' Seat ' + busSeat);
-            FLSCwindowBack();
+            FLSCwindowAlert('Check in successful. Bus ' + busNumber + ' Seat ' + busSeat, FLSCwindowBack);
         }, 
         function(fieldValues, textStatus) {
             FLSCwindowAlert("Failed to update contact. See console for details " + textStatus);
@@ -267,8 +268,7 @@ function FLSCcheckIn(api, memberID, checkInType, notes) {
 
     FLSCputMemeberData(api, memberID, fieldValues, 
         function(fieldValues, textStatus) {
-            FLSCwindowAlert('Check in ' + checkInType + ' successful');
-            FLSCwindowBack();
+            FLSCwindowAlert('Check in ' + checkInType + ' successful', FLSCwindowBack);
         }, 
         function(fieldValues, textStatus) {
             FLSCwindowAlert('Check in for ' + checkInType + ' FAILED. Try again. ' + textStatus);
@@ -296,8 +296,7 @@ function FLSCactionReportNote(api, memberID, text, reportType, reportName) {
     
     FLSCputMemeberData(api, memberID, fieldValues, 
         function(fieldValues, textStatus) {
-            FLSCwindowAlert('%s reported'.format(reportName));
-            FLSCwindowBack();
+            FLSCwindowAlert('%s reported'.format(reportName), FLSCwindowBack);
         },
         function(fieldValues, textStatus) {
             FLSCwindowAlert('%s report failed (%s). Try again'.format(reportType, textStatus));
@@ -414,7 +413,9 @@ function FLSCresetTripFields(api, memberID, completion) {
         { fieldName: TripInjuryNotes, value: null },
         { fieldName: TripLastUpdateDate, value: null },
         { fieldName: TripTestDate, value: null },
-        { fieldName: TripBusCaptain, value: null }
+        { fieldName: TripConfirmedLesson, value: null },
+        { fieldName: TripBusCaptain, value: null },
+        { fieldName: TripConfirmedLesson, value: null },
     ];
 
     console.log('resetting memberID', memberID);

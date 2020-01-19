@@ -5,7 +5,7 @@
 */
 
 class CheckInReady {
-    constructor(memberID, eventID, seatChecked, memberChecked, busSelected, seatSelected, rowSelected) {
+    constructor(memberID, eventID, seatChecked, memberChecked, busSelected, seatSelected, rowSelected, lessonSelected) {
         this.memberID = memberID || false;
         this.eventID = eventID || false;
         this.seatChecked = seatChecked || false;
@@ -13,6 +13,7 @@ class CheckInReady {
         this.seatSelected = seatSelected || false;
         this.rowSelected = rowSelected || false;
         this.busSelected = busSelected || false;
+        this.lessonSelected = lessonSelected || false;
    
         this.ready = function() {
             return this.memberID & this.memberChecked; // & this.seatSelected & this.rowSelected; // & this.seatChecked & this.eventID ;
@@ -63,10 +64,12 @@ function openCallback(memberData) {
 
             // display lesson info
             var registration = events[0];
+            $.lessonOption == '';
             for (i=0; i < registration.RegistrationFields.length; i++) {
                 if (registration.RegistrationFields[i].FieldName == "Lesson Options") {
-                    $.lessonOption = registration.RegistrationFields[i].Value.Label;
+                    $.lessonOption = registration.RegistrationFields[i].Value.Label || "No Lesson";
                     appendMemberName('Lesson: ' + $.lessonOption);
+                    break;
                 }
             }
         }
@@ -110,10 +113,10 @@ function executeCheckIn() {
     setCookie('seat', seat, 1);
     
     var seatNumber = row + seat;
-    checkInAM(busNumber, seatNumber, document.getElementById("notes").value, undefined)
+    checkInAM(busNumber, seatNumber, $.lessonOption, document.getElementById("notes").value);
 }
 
-function checkInAM (busNumber, seatNumber, notes) {
+function checkInAM (busNumber, seatNumber, lessonOption, notes) {
     // check if seat is already checked in
     FLSCisSeatAlreadyTaken($.api, busNumber, seatNumber, function(data) {
         if (data.Contacts.length != 0) {
@@ -128,13 +131,13 @@ function checkInAM (busNumber, seatNumber, notes) {
             switch(rc) {
                 case 1:
                     if (confirm("WARNING: %s %s is ALREADY checked in for %s. Do you want to check in AGAIN?".format($.data.FirstName, $.data.LastName, $.checkInType))) {
-                        FLSCcheckInAM($.api, $.memberID, busNumber, seatNumber, notes);
+                        FLSCcheckInAM($.api, $.memberID, busNumber, seatNumber, lessonOption, notes); 
                         WAcheckInTrip($.api, $.memberID, $.eventID);
                     }
                     break;
                 case 0:
                     if (confirm("Do you want to check in %s %s in Seat %s on Bus %s?".format($.data.FirstName, $.data.LastName, seatNumber, busNumber))) {
-                        FLSCcheckInAM($.api, $.memberID, busNumber, seatNumber, notes);
+                        FLSCcheckInAM($.api, $.memberID, busNumber, seatNumber, lessonOption, notes);
                         WAcheckInTrip($.api, $.memberID, $.eventID);
                     }
                     break;
@@ -144,4 +147,30 @@ function checkInAM (busNumber, seatNumber, notes) {
             }
         });    
     });
+}
+
+function changeRow(difference) {
+    var row = document.getElementById('row').value;
+
+    switch(difference) {
+        case 1:
+            if (row == maxRowsPerBus) {
+                console.log('more than max rows');
+                return;
+            }
+            break;
+
+        case -1:
+            if (row == 1) {
+                console.log('less than 0');
+                return;
+            }
+            break;
+
+        default:
+            console.log('invalid value');
+            return;
+    }
+    var newRow = parseInt(row) + parseInt(difference);
+    document.getElementById('row').value = newRow.toString().padStart(2, '0');
 }

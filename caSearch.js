@@ -582,8 +582,8 @@ function td(value) {
     return '<td align="center">%s</td>'.format(value);
 }
 
-function th(value) {
-    return '<th width="10%" align="center">%s</th>'.format(value);
+function th(value, width) {
+    return '<th width="%s" align="center">%s</th>'.format(width || '10%', value);
 }
 
 function busReportHTML(buses) {
@@ -591,7 +591,7 @@ function busReportHTML(buses) {
     var lessonTypes = allLessons(buses);
 
     var html = '<table width="100%" align="left" valign="top">';
-    html += '<tr>%s%s%s%s%s'.format(th('Bus'), th('All'), th('Students'), th('Siblings'), th('Chaperones'));
+    html += '<tr>%s%s%s%s%s'.format(th('Bus', '5%'), th('All'), th('Students'), th('Siblings'), th('Chaperones'));
     for (var i = 0; i < lessonTypes.length; i++) {
         html += th(lessonTypes[i]);
     }

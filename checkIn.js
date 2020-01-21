@@ -100,9 +100,9 @@ function checkIn(checkInType, notes) {
                 }
                 break;
             case 0:
-                if (confirm("Do you want to check in " + $.data.FirstName + " " + $.data.LastName + "?")) {
-                    FLSCcheckIn($.api, $.memberID, checkInType, notes);
-                }
+                //if (confirm("Do you want to check in " + $.data.FirstName + " " + $.data.LastName + "?")) {
+                FLSCcheckIn($.api, $.memberID, checkInType, notes);
+                //}
                 break;
             case -1:
                 alert("Invalid MemberID " + FLSCformatMemberName($.data));

@@ -221,7 +221,7 @@ function timedAlert(msg,completion)
         if (completion != undefined) {
             completion();
         }
-    },2600);
+    },2000);
     
 }
 

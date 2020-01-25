@@ -12,7 +12,7 @@ const FLSCHotline = '805-635-7669';
 // trip configurations
 const maxRowsPerBus = 16;
 const maxBusesPerTrip = 5;
-$.todayOverride = '2020-01-20'; // undefined; // set to undefined for production
+$.todayOverride = '2020-01-26'; // undefined; // set to undefined for production 
  
 // field value definitions
 const MembershipLevelChaperone = 1088585;
@@ -97,6 +97,14 @@ function memberURL(id) {
     return "https://chart.googleapis.com/chart?cht=qr&chs=200x200&chl=" + id;
 }
 
+function memberLesson(id) {
+    return '%s/caLesson?ID=%s'.format(clubBaseURL, id || $.memberID);
+}
+function goMemberLesson(id) {
+    window.location.href='%s/caLesson?ID=%s'.format(clubBaseURL, id || $.memberID);
+}
+
+// for textArea controls
 function auto_grow(element) {
     element.style.height = "5px";
     element.style.height = (element.scrollHeight)+"px";
@@ -222,7 +230,6 @@ function timedAlert(msg,completion)
             completion();
         }
     },2000);
-    
 }
 
 function FLSCwindowAlert(text, completion) {
@@ -269,7 +276,9 @@ function FLSCsms(phoneNumber) {
     //
 }
 
-function radioSelection(radioName, optionName) {
-    return '<input id="%s" type="radio" name="%s" id="%s" value="%s">\n<label for="%s">%s</label><br>'.format(radioName, radioName, optionName, optionName, optionName, optionName);
+function radioSelection(radioName, optionName, onchange) {
+    if (onchange != undefined) {
+        onchange = 'onchange="%s;"'.format(onchange);
+    }
+    return '<input id="%s" type="radio" name="%s" id="%s" value="%s" %s>\n<label for="%s">%s</label><br>'.format(radioName, radioName, optionName, optionName, optionName, optionName, onchange);
 }
-

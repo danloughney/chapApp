@@ -35,32 +35,51 @@ function onChangeBusNumber() {
 
     clearAllCells();
     executeQuery(busNumber);
+    executeMountainTestQuery(busNumber);
 }
 
 function executeQuery(busNumber) {
-
     search = searches[$.listName];
 
     $.api.apiRequest({
         apiUrl: $.api.apiUrls.contacts(
             { 
             '$filter' : "'Status' eq 'Active' AND 'TripBusNumber' eq '%s'".format(busNumber),
-            //'$select' : "'Status', 'TripBusNumber', 'TripBusSeat', 'Id', 'LastName', 'FirstName'",
             }),
         success: function (data, textStatus, jqXhr) {
             var resultCount = 0;
             var contacts = data.Contacts;
-            
+            var students = 0, siblings = 0, chaperones = 0;
+
             contacts.sort(search.sorter || { } );
 
             for (var i = 0; i < contacts.length; i++) {
-                resultCount ++;
+                
                 var contact = contacts[i];
+                resultCount ++;
+                switch(contact.MembershipLevel.Name) {
+                    case 'Student':
+                        students ++;
+                        break;
+                    case 'Chaperone':
+                        chaperones ++;
+                        break;
+                    case 'Sibling':
+                        siblings ++;
+                        break;
+                    default:
+                        console.log('incorrect membership level', contact.MembershipLevel.Name);
+                }
+
                 var elt = document.getElementById(fieldValue(contact, TripBusSeat));
                 elt.innerHTML = formatMember(contact);
                 elt.style = memberStatusBackgroundStyle(fieldValue(contact, 'Member Status'));
             }
-            document.getElementById('listCount').innerHTML = '%s Seat%s in Use'.format(resultCount, resultCount == 1 ? '' : 's');
+            document.getElementById('listCount').innerHTML = '%s Seat%s in Use<br>%s Student%s<br>%s Sibling%s<br>%s Chaperone%s'.format(
+                resultCount, resultCount == 1 ? '' : 's',
+                students, students == 1 ? '' : 's',
+                siblings, siblings == 1 ? '' : 's',
+                chaperones, chaperones == 1 ? '' : 's');
         },
         error: function (data, textStatus, jqXhr) {
             ;
@@ -83,6 +102,42 @@ function executeQuery(busNumber) {
     //     document.getElementById('captainInfo').innerHTML = html;
     // });
 }
+
+function executeMountainTestQuery(busNumber) {
+    
+    $.api.apiRequest({
+        apiUrl: $.api.apiUrls.contacts(
+            {     
+            '$filter' : "'Status' eq 'Active' and  substringof('TripTestDate', '%s') AND 'TripBusNumber' eq '%s'".format($.todayOverride || new Date().toJSON().slice(0,10), busNumber),            
+            }),
+        success: function (data, textStatus, jqXhr) {
+            // 
+            var resultCount = 0;
+            var contacts = data.Contacts;
+            
+            contacts.sort(sortByPassFailAlpha);
+
+            var html = '<table width="100%">';
+            for (var i = 0; i < contacts.length; i++) {
+                var testing = fieldValue(contacts[i], 'Proficiency Test Pass?');
+                if (testing != undefined) {
+                    for (var j=0; j < testing.length; j++) {
+                        test = testing[j];
+                        if (test.Id == '12469877' || test.Id == '12469878') {
+                            html += '<tr><td width="30%">%s</td><td>Pass %s</td></tr>'.format(FLSCformatMemberName(contacts[i]), test.Label);
+                        }
+                    }
+                }
+                html += '</table>';
+            }
+            document.getElementById('mountainTest').innerHTML = html; // '%s Seat%s in Use'.format(resultCount, resultCount == 1 ? '' : 's');
+        },
+        error: function (data, textStatus, jqXhr) {
+            ;
+        }
+    });
+}
+
 
 function renderRow(rowType, rowNumber, className) {
     return '<tr align="center"> \
@@ -128,6 +183,9 @@ document.addEventListener("DOMContentLoaded", function() {
     $.api = new WApublicApi(FLSCclientID);
     $.when($.api.init()).done(function() {
         executeQuery(busNumber);
+
+        executeMountainTestQuery(busNumber);
         return false;
     });
 });
+

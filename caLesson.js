@@ -1,18 +1,18 @@
 /*
-* Copyright 2019 SpookyGroup LLC. All rights reserved.
-*
-* code used for AM check-in
-*/
+ * Copyright 2019 SpookyGroup LLC. All rights reserved.
+ * Code used for change lesson
+ *
+ *   TripConfirmedLesson:
+ *       "LessonName" - user confirmed original selected lesson
+ *       "ADD LessonName" - user did not register for a lesson, but added it at the morning check-in
+ *       "CHG LessonName ORIG OriginalLessonName" - user changed lesson from OriginalLessonName to LessonName
+ *
+ */
 
 class CheckInReady {
-    constructor(memberID, eventID, seatChecked, memberChecked, busSelected, seatSelected, rowSelected, lessonSelected) {
+    constructor(memberID, eventID, lessonSelected) {
         this.memberID = memberID || false;
         this.eventID = eventID || false;
-        this.seatChecked = seatChecked || false;
-        this.memberChecked = memberChecked || false;
-        this.seatSelected = seatSelected || false;
-        this.rowSelected = rowSelected || false;
-        this.busSelected = busSelected || false;
         this.lessonSelected = lessonSelected || false;
    
         this.ready = function() {
@@ -20,10 +20,12 @@ class CheckInReady {
         }
     }
 }
+
 function enableButton() {
     if ($.CIR.ready()) {
-        document.getElementById("checkInButton").disabled = false;
-        document.getElementById("checkInButton").className = "btn";
+        const saveButton = 'saveButton';
+        document.getElementById().disabled = false;
+        document.getElementById(saveButton).className = "btn";
         console.log('button enabled');
         return;
     }
@@ -31,54 +33,53 @@ function enableButton() {
 }
 
 
-function openCallback(memberData) {
-    $.CIR = new CheckInReady();
-    if ($.memberID) $.CIR.memberID = true;
-
-    if ($.eventID) $.CIR.eventID = true;
-    
-    enableButton();
-
-    // check if member is checked in
-    FLSChasCheckedIn($.api, $.memberID, $.checkInType, function(checkedIn) {
-        if (!checkedIn) {
-            $.CIR.memberChecked = true;
-        } else {
-            alert("WARNING: %s %s is ALREADY checked in for %s.".format($.data.FirstName, $.data.LastName, $.checkInType));
-            $.CIR.memberChecked = true;
-        }
-        enableButton();
-    });
-}
-
 document.addEventListener('DOMContentLoaded', function(){
-    $.checkInType = $.urlParam('type');
-    document.getElementById('checkInLabel').innerHTML = $.checkInType + ' Check In';
     
-    $.pageOpen(openCallback);
-
-    var busNumber = getCookie('busNumber') || '1';
-    if (busNumber == '') busNumber = '1';
-
-    var cell = document.getElementById('busNumber'+busNumber);
-    cell.checked = true;
-
-    var row = getCookie('row') || '1';
-    cell = document.getElementById('row').value = row;
-
-    var seat = getCookie('seat') || 'A';
-    cell = document.getElementById('seat%s'.format(seat)).checked = true;
+    $.pageOpen(function(member) {
+        $.CIR = new CheckInReady();
+        if ($.memberID) $.CIR.memberID = true;
+    
+        document.getElementById('currentLesson').innerHTML = $.lessonOption;
+        if ($.eventID) $.CIR.eventID = true;
+        
+        enableButton();
+    
+        // current lesson identified by pageOpen
+    
+        getCurrentEvent($.api, $.eventID, function(event) {
+            // newLesson
+            if (event === undefined) {
+                alert('Could Not Find Today\'s event.');
+                return;
+            }
+       
+            // find the list of available lessons
+            // keep lesson name and value in dictionary 
+            // render the available lessons as a radio control
+    
+            var html = '';
+            var eventRegistrationFields = event.Details.EventRegistrationFields;
+            for (var i = 0; i < eventRegistrationFields.length; i++) {
+                if (eventRegistrationFields[i].FieldName == 'Lesson Options') {
+                    lessonOptions = eventRegistrationFields[i].AllowedValues;
+                    for (var j = 0; j < lessonOptions.length; j++) {
+                        if (lessonOptions[j].Label != null && lessonOptions[j].Label != $.lessonOption) {
+                            //onchange ISN'T working
+                            html += radioSelection('newLesson', lessonOptions[j].Label, function() {
+                                $CIR.lessonSelected = true;
+                                enableButton();
+                            }) + '<br>';
+                        }
+                    }
+                }
+            }
+            document.getElementById('newLesson').innerHTML = html;
+        });
+    });
 });
 
-function executeCheckIn() {
-    var busNumber = document.querySelector('input[name="busNumber"]:checked').value;
-    setCookie('busNumber', busNumber, 1);
-
-    var row = document.getElementById("row").value;
-    row = row.padStart(2, '0');
-    setCookie('row', row, 1);
-
-    var seat = "1";
+function execute() {
+    // read the radio buttons for the selected 
     var seatElements = document.getElementsByName('seat');
     for(var i = 0; i < seatElements.length; i++) { 
         if(seatElements[i].checked) {

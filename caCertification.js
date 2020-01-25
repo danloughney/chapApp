@@ -27,12 +27,47 @@ const evalFields = {
     '12469884' : 'Torso turning',
 };
 
+const failOptions = [
+    '12469432',
+    '12469433',
+    '12469430',
+    '12469431',
+    '12469881',
+    '12469434',
+    '12469882',
+    '12469883',
+    '12469884',
+];
+
+function enableFailOptions(enable) {
+    for (var i = 0; i < failOptions.length; i++) {
+        var cell = document.getElementById(failOptions[i]);
+        if (enable) {
+            cell.disabled = false;
+        } else {
+            cell.checked = false;
+            cell.disabled = true;
+        }
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function(){
     $.pageOpen(function(data) {
         var testing = fieldValue(data, 'Proficiency Test Pass?');
         if (testing != undefined) {
             for (var i=0; i < testing.length; i++) {
                 test = testing[i];
+                switch(test.Id) {
+                    case 12469877:  
+                    case 12469878:
+                        enableFailOptions(false);
+                        break;
+
+                    case 12469879: 
+                    case 12469880: 
+                        enableFailOptions(true);
+                        break;
+                }
                 var cell = document.getElementById(test.Id);
                 cell.checked = true;
             }
@@ -65,7 +100,7 @@ function saveForm() {
 
     var fieldValues = [ 
         { fieldName:ProficiencyField, value: values },   
-        { fieldName:TripTestDate, value: FLSCformatDate(new Date()) }
+        { fieldName:TripTestDate, value: ($.todayOverride || FLSCformatDate(new Date())) }
     ];
     
     var notes = document.getElementById("notes").value;
@@ -106,5 +141,5 @@ function resetCertification() {
             FLSCwindowAlert("Reset failed. Try again. " + textStatus);
         }
     );
-
 }
+

@@ -59,8 +59,8 @@ class BusReport {
 const listTodayTrip = "Registered for Today's Trip";
 const listCheckedInTodayTrip = "Checked In on Bus";
 const listViolation = "Violations";
-const listInTesting = "Checked In for Testing";
-const listTestResults = 'Testing Results';
+const listInTesting = "Testing Evaluation";
+const listTestResults = 'Testing Result Report';
 const listTestingRegistration = 'Testing Registration';
 const listMissedLunch = 'Lunch Check In';
 const listFirstAid = 'First Aid';
@@ -95,6 +95,7 @@ const testingList = [
 ];
 
 const filterCheckedIn = "('Status' eq 'Active' AND 'TripCheckInMorning' ne NULL AND 'TripCheckInMorning' ne '')";
+const filterStatusActive = "('Status' eq 'Active')";
 const selectBasicFields = "'Last Name','First Name','Id";
 
 const sortAlphabetically = function(a, b) {
@@ -239,7 +240,7 @@ function testingFormatter(contact) {
         );    
     }
     return "<tr><td><a href='%s'>%s, %s</a></td></tr>".format(
-        checkInURL(pageTesting, contact.Id),
+        checkInURL(pageCertification, contact.Id),
         contact.LastName, contact.FirstName, 
     );
 };
@@ -254,9 +255,10 @@ function testingResultsFormatter(contact) {
             passFail(fieldValue(contact, ProficiencyField))
         );    
     }
-    return "<tr><td><a href='%s'>%s, %s</a></td></tr>".format(
+    return "<tr><td><a href='%s'>%s, %s</a><br>%s</td></tr>".format(
         memberHome(contact.Id), 
         contact.LastName, contact.FirstName, 
+        passFail(fieldValue(contact, ProficiencyField))
     );
 };
 
@@ -292,7 +294,8 @@ const searches = {
     'First Aid'     : new SavedSearch('First Aid', 
                                         'contacts',
                                         'Who is on the trip for the First Aid team.',
-                                        filterCheckedIn, 
+                                        // filterCheckedIn,
+                                        filterStatusActive, 
                                         selectBasicFields,
                                         sortAlphabetically),
 
@@ -307,14 +310,14 @@ const searches = {
     'Testing Registration'      : new SavedSearch('Testing Registration',
                                         'contacts',
                                         'Restricted students on today\'s trip. Use this page to check students in for mountain testing.', 
-                                        "'Status' eq 'Active' AND 'TripCheckInMorning' ne NULL AND " + 
+                                        "'Status' eq 'Active' AND " + // 'TripCheckInMorning' ne NULL AND " + 
                                             "('TripCheckInTesting' eq NULL OR 'TripCheckInTesting' eq '') AND " +
                                             "('Member Status' eq '12483746' OR 'Member Status' eq '12483747' OR 'Member Status' eq '12483748' OR 'Member Status' eq '12483749' OR 'Member Status' eq '12483750')",
                                         selectBasicFields, 
                                         sortAlphabetically, 
                                         testingRegistrationFormatter),
         
-    'Checked In for Testing'    : new SavedSearch('Checked In for Testing', 
+    'Testing Evaluation'    : new SavedSearch('Testing Evaluation', 
                                         'contacts',
                                         'Students checked in for testing, but who haven\'t tested yet.',
                                         "('Status' eq 'Active' AND 'TripCheckInTesting' ne NULL AND 'TripTestDate' eq NULL)", 
@@ -322,7 +325,7 @@ const searches = {
                                         sortByTestingCheckin, 
                                         testingFormatter),
 
-    'Testing Results'           : new SavedSearch('Testing Results',
+    'Testing Result Report'           : new SavedSearch('Testing Result Report',
                                         'contacts', 
                                         'Students that have taken the mountain test.',
                                         "'Status' eq 'Active' and  substringof('TripTestDate', '%s')".format($.todayOverride || new Date().toJSON().slice(0,10)),

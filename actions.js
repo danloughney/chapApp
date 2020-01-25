@@ -109,6 +109,12 @@ function sgGetBusCaptain(busNumber, completion) {
     });
 }
 
+function appendMemberName(text) {
+    var ele = document.getElementById("memberName").innerHTML;
+    ele += '<br><strong>%s</strong>'.format(text);
+    document.getElementById("memberName").innerHTML = ele;
+}
+
 $.pageOpen = function(callback) {
     // render the initial page with all selected member data
     
@@ -126,10 +132,6 @@ $.pageOpen = function(callback) {
             success: function (data, textStatus, jqXhr) {
                 $.data = data;
                 
-                if (callback) {
-                    callback(data);
-                }
-
                 var memberStatus = fieldValue($.data, 'Member Status');
                 var checkedIn = fieldValue($.data, TripCheckInMorning);
 
@@ -173,6 +175,34 @@ $.pageOpen = function(callback) {
                         });       
                     }
                 }
+
+                var membershipLevel = data.MembershipLevel.Name;
+                getCurrentEventRegistration($.api, $.memberID, membershipLevel, function(events) {
+                    if (events.length == 0) {
+                        appendMemberName('UNREGISTERED');
+                        timedAlert('%s isn\'t registered for today\'s trip!'.format(membershipLevel));
+                    } else {            
+                        // display lesson info
+                        var registration = events[0];
+                        $.lessonOption == '';
+                        for (i=0; i < registration.RegistrationFields.length; i++) {
+                            if (registration.RegistrationFields[i].FieldName == "Lesson Options") {
+                                var value = registration.RegistrationFields[i].Value;
+                                if (value == null) {
+                                    $.lessonOption = "No";
+                                } else {
+                                    $.lessonOption = registration.RegistrationFields[i].Value.Label || "No";
+                                }
+                                appendMemberName($.lessonOption + ' Lesson');
+                                break;
+                            }
+                        }
+                    }
+                    // callback AFTER we get Event info (or not)
+                    if (callback) {
+                        callback(data);
+                    }
+                });
             },
             error: function (jqXHR, textStatus, errorThrown) {
                 document.getElementById("memberName").innerHTML = "Unknown memberID [" + $.memberID + "]";
@@ -466,7 +496,7 @@ function FLSCresetTripFieldsAll(api, resultCount) {
 }
 
 //retrieves the current registration for the member
-function getCurrentEvent(api, memberID, membershipLevel, callback) {
+function getCurrentEventRegistration(api, memberID, membershipLevel, callback) {
     // get Event Info
     api.apiRequest({
         apiUrl: api.apiUrls.events(),
@@ -505,6 +535,22 @@ function getCurrentEvent(api, memberID, membershipLevel, callback) {
                 }
             });
 
+        },
+        error: function (data, textStatus, jqXhr) {
+            //document.getElementById('listResults2').innerHTML = html = 'failed getting search result: ' + textStatus;
+        }
+    });
+}
+
+//retrieves the current registration for the member
+function getCurrentEvent(api, eventID, callback) {
+    // get Event Info
+    api.apiRequest({
+        apiUrl: api.apiUrls.event(eventID),
+        success: function (event, textStatus, jqXhr) {
+            console.log('event', event);
+
+            callback(event);
         },
         error: function (data, textStatus, jqXhr) {
             //document.getElementById('listResults2').innerHTML = html = 'failed getting search result: ' + textStatus;

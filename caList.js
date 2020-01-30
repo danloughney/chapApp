@@ -3,8 +3,17 @@
 */
 
 var formatRegistration = function(registration) {
-        return '<tr><td><a href="%s">%s</a><br>%s&nbsp;&nbsp;&nbsp;%s</td></tr>'.format(
+    return '<tr><td><a href="%s">%s</a><br>%s&nbsp;&nbsp;&nbsp;%s</td></tr>'.format(
         memberHome(registration.Contact.Id),
+        registration.DisplayName, 
+        registration.RegistrationType.Name,
+        (registration.IsPaid) ? '' : 'Not Paid'
+    );
+}
+
+var formatRegistrationCheckin = function(registration) {
+    return '<tr><td><a href="%s">%s</a><br>%s&nbsp;&nbsp;&nbsp;%s</td></tr>'.format(
+        checkInURL(pageCheckInAM, registration.Contact.Id),
         registration.DisplayName, 
         registration.RegistrationType.Name,
         (registration.IsPaid) ? '' : 'Not Paid'
@@ -14,16 +23,18 @@ var formatRegistration = function(registration) {
 function renderResults(contacts, formatFunction, withIndex) {
     if (contacts == undefined) {
         return;
-    }
-
-    var resultCount = 0;
-    
+    }   
     contacts.sort($.search.sorter || { } );
 
     var html = '<table width="100%"><tr><td width="80%"><table>';
     var lastLabel = '';
     var labelList = [];
+    var resultCount = 0;
+ 
     for (var i = 0; i < contacts.length; i++) {
+        if (contacts[i] == null) {
+            continue;
+        }
         if ($.search.includeFn(contacts[i]) == true) {
             resultCount ++;
             if (withIndex) {
@@ -49,7 +60,6 @@ function renderResults(contacts, formatFunction, withIndex) {
     html = document.getElementById('listResults').innerHTML + html;
     document.getElementById('listResults').innerHTML = html;
     
-    
     html = $.search.summaryFn(contacts);
     if (html != '') {
         document.getElementById('listCount').innerHTML = html;
@@ -72,10 +82,13 @@ function todaysRegistrations(membershipLevel, completion) {
                 if (event.EndDate.slice(0,10) == today && event.Name.includes(membershipLevel)) {
                     console.log('found today event', event);
                     todaysEvents.push(event);
+                    break;
                 }
             }
+
             if (todaysEvents.length==0) {
                 console.log('This is no %s event for today'.format(membershipLevel));
+                completion([]);
                 return;
             }
 
@@ -143,6 +156,42 @@ document.addEventListener("DOMContentLoaded", function() {
                     });
                 });
                 break;
+
+            case 'registrationsNotCheckedIn':
+                    document.getElementById('listResults').innerHTML = '';
+                    var contacts = [];
+                    todaysRegistrations('Student', function(data) {
+                        contacts = contacts.concat(data);
+                        todaysRegistrations('Sibling', function(data) {
+                            contacts = contacts.concat(data);
+                            todaysRegistrations('Chaperone', function(data) {
+                                contacts = contacts.concat(data);
+                                var alreadyCheckedIn = { };
+                                $.api.apiRequest({
+                                    apiUrl: $.api.apiUrls.contacts({ '$filter' : filterCheckedIn }),
+                                    success: function (data, textStatus, jqXhr) {
+                                        var checkedInContacts = data.Contacts;
+                                        for (var i = 0;i<checkedInContacts.length;i++) {
+                                            alreadyCheckedIn[checkedInContacts[i].Id] = checkedInContacts[i];
+                                        }
+
+                                        // remove any already checked in kids
+                                        for (i = 0; i < contacts.length; i++) {
+                                            if (alreadyCheckedIn[contacts[i].Contact.Id] != undefined) {
+                                                contacts[i] = null;
+                                            }
+                                        }
+                                        renderResults(contacts, formatRegistrationCheckin, true);
+                                    },
+                                    error: function (data, textStatus, jqXhr) {
+                                        console.log(textStatus);
+                                    }
+                                });
+                            });
+                        });
+                    });
+                    break;
+    
         }
        
         return false;

@@ -58,40 +58,48 @@ class BusReport {
 
 const listTodayTrip = "Registered for Today's Trip";
 const listCheckedInTodayTrip = "Checked In on Bus";
+const listMorningCheckIn = 'Morning Check In';
 const listViolation = "Violations";
+
+const listMissedLunch = 'Lunch Check In';
+
 const listInTesting = "Testing Evaluation";
 const listTestResults = 'Testing Result Report';
 const listTestingRegistration = 'Testing Registration';
-const listMissedLunch = 'Lunch Check In';
+
 const listFirstAid = 'First Aid';
 const listInjury = 'Injuries';
 const listBusReport = 'Bus Report';
+
 const listAllActiveMembers = 'All Students';
 const listAllActiveSiblings = 'All Siblings';
 const listAllChaperones = 'All Chaperones';
-const listLessons = 'Checked In for Lesson';
 
-// firstAid does not go in this public list of searches
-const lists = [
+const listLessonCheckIn = "Lesson Check In"; //xx have a lesson, but have not checked in. goes to lesson check-in
+const listInLessons = 'Checked In for Lesson'; // this isn't very useful
+
+const morningLists = [
     listTodayTrip,
-    listCheckedInTodayTrip,
-    listLessons,
+    listMorningCheckIn,
+    // listCheckedInTodayTrip,
     listMissedLunch,
-    listViolation,
-    listInjury,
 ];
 
-const lists2 = [
-    listAllActiveMembers,
-    listAllActiveSiblings,
-    listAllChaperones,
+const lessonLists = [
+    listLessonCheckIn,
+    listInLessons,
 ];
 
 const testingList = [
     listTestingRegistration,
     listInTesting,
     listTestResults,
-  
+];
+
+const memberLists = [
+    listAllActiveMembers,
+    listAllActiveSiblings,
+    listAllChaperones,
 ];
 
 const filterCheckedIn = "('Status' eq 'Active' AND 'TripCheckInMorning' ne NULL AND 'TripCheckInMorning' ne '')";
@@ -199,51 +207,36 @@ function passFail(proficiencyArray) {
     return 'Failed';
 }
 
+function genericFormatter(contact, linkType) {
+    var busNumber = fieldValue(contact, TripBusNumber);
+    if (busNumber != undefined && busNumber != '') {
+        return "<tr><td><a href='%s'>%s, %s</a><br>Bus %s Seat %s</td></tr>".format(
+            checkInURL(linkType, contact.Id),
+            contact.LastName, contact.FirstName, 
+            fieldValue(contact, TripBusNumber), fieldValue(contact, TripBusSeat)
+        );    
+    }
+    return "<tr><td><a href='%s'>%s, %s</a></td></tr>".format(
+        checkInURL(linkType, contact.Id),
+        contact.LastName, contact.FirstName, 
+    );
+};
 
 function lunchRegistrationFormatter(contact) {
-    var busNumber = fieldValue(contact, TripBusNumber);
-    if (busNumber != undefined && busNumber != '') {
-        return "<tr><td><a href='%s'>%s, %s</a><br>Bus %s Seat %s</td></tr>".format(
-            checkInURL(pageLunch, contact.Id),
-            contact.LastName, contact.FirstName, 
-            fieldValue(contact, TripBusNumber), fieldValue(contact, TripBusSeat)
-        );    
-    }
-    return "<tr><td><a href='%s'>%s, %s</a></td></tr>".format(
-        checkInURL(pageLunch, contact.Id),
-        contact.LastName, contact.FirstName, 
-    );
-};
+    return genericFormatter(contact, pageLunch);
+}
 
 function testingRegistrationFormatter(contact) {
-    var busNumber = fieldValue(contact, TripBusNumber);
-    if (busNumber != undefined && busNumber != '') {
-        return "<tr><td><a href='%s'>%s, %s</a><br>Bus %s Seat %s</td></tr>".format(
-            checkInURL(pageTesting, contact.Id),
-            contact.LastName, contact.FirstName, 
-            fieldValue(contact, TripBusNumber), fieldValue(contact, TripBusSeat)
-        );    
-    }
-    return "<tr><td><a href='%s'>%s, %s</a></td></tr>".format(
-        checkInURL(pageTesting, contact.Id),
-        contact.LastName, contact.FirstName, 
-    );
-};
+    return genericFormatter(contact, pageTesting);
+}
 
 function testingFormatter(contact) {
-    var busNumber = fieldValue(contact, TripBusNumber);
-    if (busNumber != undefined && busNumber != '') {
-        return "<tr><td><a href='%s'>%s, %s</a><br>Bus %s Seat %s</td></tr>".format(
-            checkInURL(pageCertification, contact.Id),
-            contact.LastName, contact.FirstName, 
-            fieldValue(contact, TripBusNumber), fieldValue(contact, TripBusSeat)
-        );    
-    }
-    return "<tr><td><a href='%s'>%s, %s</a></td></tr>".format(
-        checkInURL(pageCertification, contact.Id),
-        contact.LastName, contact.FirstName, 
-    );
-};
+    return genericFormatter(contact, pageCertification);
+}
+
+function lessonRegistrationFormatter(contact) {
+    return genericFormatter(contact, pageLesson);
+}
 
 function testingResultsFormatter(contact) {
     var busNumber = fieldValue(contact, TripBusNumber);
@@ -262,27 +255,53 @@ function testingResultsFormatter(contact) {
     );
 };
 
+function detentionFormatter(contact) {
+    var busNumber = fieldValue(contact, TripBusNumber);
+    if (busNumber != undefined && busNumber != '') {
+        return "<tr><td><a href='%s'>%s, %s</a><br>Bus %s Seat %s<br><label class='labelBad'>%s</label></td></tr>".format(
+            memberHome(contact.Id), 
+            contact.LastName, contact.FirstName, 
+            fieldValue(contact, TripBusNumber), fieldValue(contact, TripBusSeat),
+            fieldValue(contact, TripDetentionNotes)
+        );    
+    }
+    return "<tr><td><a href='%s'>%s, %s</a><br><label class='labelBad'>%s</label></td></tr>".format(
+        memberHome(contact.Id), 
+        contact.LastName, contact.FirstName, 
+        fieldValue(contact, TripDetentionNotes)
+    );
+};
+
+function sortRegistrations(a, b) {
+    if (a == undefined && b != undefined) {
+        return -1;
+    } 
+    if (a != undefined && b == undefined) { 
+        return 1;
+    }
+    if (a == undefined && b == undefined) {
+        return 0;
+    }
+
+    var x = a.DisplayName.toLowerCase();
+    var y = b.DisplayName.toLowerCase();
+    return x < y ? -1 : x > y ? 1 : 0;
+}
+
 const searches = {
     'Registered for Today\'s Trip' : new SavedSearch('Registered for Today\'s Trip', 
-                                        'registrations',
-                                        'All students, siblings, and chaperones who are registered for today\'s trip.',
-                                        filterCheckedIn, 
-                                        selectBasicFields, 
-                                        function(a, b) {
-                                            if (a == undefined && b != undefined) {
-                                                return -1;
-                                            } 
-                                            if (a != undefined && b == undefined) { 
-                                                return 1;
-                                            }
-                                            if (a == undefined && b == undefined) {
-                                                return 0;
-                                            }
-                                        
-                                            var x = a.DisplayName.toLowerCase();
-                                            var y = b.DisplayName.toLowerCase();
-                                            return x < y ? -1 : x > y ? 1 : 0;
-                                        }),
+        'registrations',
+        'All students, siblings, and chaperones who are registered for today\'s trip.',
+        filterCheckedIn, 
+        selectBasicFields, 
+        sortRegistrations),
+
+    'Morning Check In' : new SavedSearch('Morning Check In', 
+        'registrationsNotCheckedIn',
+        'All students, siblings, and chaperones who are registered for today\'s trip, but haven\'t checked in',
+        filterCheckedIn,
+        selectBasicFields,
+        sortRegistrations),
 
     'Checked In on Bus' : new SavedSearch('Checked In on Bus', 
                                         'contacts',
@@ -356,6 +375,14 @@ const searches = {
                                             return html;
                                         }),
 
+    'Lesson Check In'           : new SavedSearch('Lesson Check In',
+                                        'contacts',
+                                        'Students who have registered for lesson, but who have not yet checked in',
+                                        "'Status' eq 'Active' AND 'TripConfirmedLesson' ne NULL AND 'TripCheckInLesson' eq NULL",
+                                        selectBasicFields, 
+                                        sortAlphabetically,
+                                        lessonRegistrationFormatter),
+
     'Checked In for Lesson'     : new SavedSearch('Checked In for Lesson', 
                                         'contacts',
                                         'Students that have checked in for their lesson.',
@@ -404,13 +431,17 @@ const searches = {
 
     'Bus Report'    : new SavedSearch('Bus Report',
             'contacts',
-            'Summary of students, siblings, chaperones, with lessons, by bus. Export data and send to the mountain.',
+            'Summary of students, siblings, chaperones, with lessons, by bus. Lists all students with detention. Export data and send to the mountain.',
             filterCheckedIn, 
             selectBasicFields,
             sortBySeat, 
-            undefined, // default formatter
-            function() { 
-                return false; // only need the summary
+            detentionFormatter, // default formatter
+            function(contact) {
+                var detention = fieldValue(contact, TripDetentionFlag);
+                if (detention && detention.Id == detentionRequired) {
+                    return true;
+                }
+                return false;
             },
             function(contacts) {
                 var bus = 1;
@@ -522,27 +553,6 @@ function allLessons(buses) {
     return lessonTypes.sort();
 }
 
-function busReportHTMLOld(buses) {
-    var totals = new BusReport(0);
-    var lessonTypes = allLessons(buses);
-
-    var html = '<table width="100%" align="left" valign="top">';
-    for (var i = 0; i < buses.length; i++) {
-        totals.add(buses[i]);
-        
-        html += '<tr><td width="20%">Bus %s</td><td width="20%">All %s</td><td width="20%">Students %s</td><td width="20%">Sibs %s</td><td width="20%">Chaps %s</td></tr>'.format(buses[i].busNumber, buses[i].total, buses[i].students, buses[i].siblings, buses[i].chaperones);
-
-        for (var j = 0; j <lessonTypes.length; j++) {
-            if (buses[i].lessons[lessonTypes[j]] != undefined) {
-                html += '<tr><td>&nbsp;&nbsp;%s&nbsp;%s</td></tr>'.format(lessonTypes[j], buses[i].lessons[lessonTypes[j]]);
-            }
-        }
-    }
-    html += '<tr><td width="20%">%s</td><td width="20%">All %s</td><td width="20%">Students %s</td><td width="20%">Sibs %s</td><td width="20%">Chaps %s</td></tr>'.format('All', totals.total, totals.students, totals.siblings, totals.chaperones);
-    html += '</table>';
-    return html;            
-}
-
 const newline = '\r\n'; //'%0D%0A';
 
 function lessonCount(lessons, lessonType) {
@@ -615,7 +625,7 @@ function busReportHTML(buses) {
     for (j = 0; j < lessonTypes.length; j++) {
         html += td(lessonCount(totals.lessons, lessonTypes[j]));
     }
-    html += '</tr></table>';
+    html += '</tr></table><p>&nbsp;<p><label class="labelBad">Detentions</label>';
 
     return html;
 }

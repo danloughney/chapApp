@@ -8,16 +8,23 @@
 document.addEventListener("DOMContentLoaded", function() {
 
     var html = '';
-    for (var i = 0; i < lists.length; i++) {
+    for (var i = 0; i < morningLists.length; i++) {
         if (i != 0) html += '<br>';
-        html += '<a href="/caList?name=' + searches[lists[i]].name + '">' + searches[lists[i]].name + '</a>';
+        html += '<a href="/caList?name=' + searches[morningLists[i]].name + '">' + searches[morningLists[i]].name + '</a>';
     }
     document.getElementById("todaysLists").innerHTML = html;
 
     html = '';
-    for (i = 0; i < lists2.length; i++) {
+    for (i = 0; i < lessonLists.length; i++) {
         if (i != 0) html += '<br>';
-        html += '<a href="/caList?name=' + searches[lists2[i]].name + '">' + searches[lists2[i]].name + '</a>';
+        html += '<a href="/caList?name=' + searches[lessonLists[i]].name + '">' + searches[lessonLists[i]].name + '</a>';
+    }
+    document.getElementById("lessonLists").innerHTML = html;
+
+    html = '';
+    for (i = 0; i < memberLists.length; i++) {
+        if (i != 0) html += '<br>';
+        html += '<a href="/caList?name=' + searches[memberLists[i]].name + '">' + searches[memberLists[i]].name + '</a>';
     }
     document.getElementById("membersLists").innerHTML = html;
 

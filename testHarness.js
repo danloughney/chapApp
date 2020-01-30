@@ -190,13 +190,14 @@ function formatRegistrationFieldData(data) {
 function testEventRegistrations() {
     ///var url = $.api.apiUrls.registrations();
 
+    var todaysEvents = [];
+
     $.api.apiRequest({
         apiUrl: 'https://foxlaneskiclub.wildapricot.org/sys/api/v2.1/accounts/300928/events', 
         success: function (data, textStatus, jqXhr) {
             console.log('list', data);
 
-            var todaysEvents = [];
-            var today = new Date().toJSON().slice(0,10);
+            var today = $.todayOverride || new Date().toJSON().slice(0,10);
             var events = data.Events;
             for (i=0; i < events.length; i++) {
                 var event = events[i];
@@ -214,8 +215,13 @@ function testEventRegistrations() {
         }
     });
 
+    getCurrentEvent($.api, 3708452, function(event) {
+        console.log('event', event);
+    });
+
     $.api.apiRequest({
-        apiUrl: 'https://foxlaneskiclub.wildapricot.org/sys/api/v2.1/accounts/300928/eventregistrations?eventId=%s&contactId=%s'.format(3665194, $.memberID), 
+        apiUrl: 'https://foxlaneskiclub.wildapricot.org/sys/api/v2.1/accounts/300928/events/%s'.format(3708452), 
+        // apiUrl: 'https://foxlaneskiclub.wildapricot.org/sys/api/v2.1/accounts/300928/eventregistrations?eventId=%s&contactId=%s'.format(3708452, $.memberID), 
         success: function (data, textStatus, jqXhr) {
             console.log('list', data);
             
@@ -244,7 +250,7 @@ var tests = [
     testDateFormat,
     // testQuery1,
     testContactFields,
-    //// testEventRegistrations
+    testEventRegistrations
     /* testReportBlankViolation,
     testReportViolation,
     testCheckInAM,

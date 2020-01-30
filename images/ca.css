@@ -6,7 +6,8 @@
   cursor: pointer; /* Mouse pointer on hover */
   border-radius: 4px;
   height: 2em;
-  width: 6.5em;
+  min-width: 6.5em;
+  display: inline-block;
   text-align: center;
   margin: auto;
   }
@@ -19,11 +20,11 @@
   cursor: pointer; /* Mouse pointer on hover */
   border-radius: 4px;
   height: 2em;
-  width: 6.5em;
+  min-width: 6.5em;
+  display: inline-block;
   text-align: center;
   margin: auto;
 }
-
   
 .btnRed {
     background-color:#f44336; /* Red background */
@@ -33,7 +34,8 @@
     cursor: pointer; /* Mouse pointer on hover */
     border-radius: 4px;
     height: 2em;
-    width: 6.5em;
+    min-width: 6.5em;
+    display: inline-block;
     text-align: center;
     margin: auto;
 }
@@ -46,7 +48,8 @@
     cursor: pointer; /* Mouse pointer on hover */
     border-radius: 4px;
     height: 2em;
-    width: 6.5em;
+    min-width: 6.5em;
+    display: inline-block;
     text-align: center;
     margin: auto;
 }

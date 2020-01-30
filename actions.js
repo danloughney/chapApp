@@ -183,18 +183,24 @@ $.pageOpen = function(callback) {
                         timedAlert('%s isn\'t registered for today\'s trip!'.format(membershipLevel));
                     } else {            
                         // display lesson info
-                        var registration = events[0];
+                        $.registration = events[0];
                         $.lessonOption == '';
-                        for (i=0; i < registration.RegistrationFields.length; i++) {
-                            if (registration.RegistrationFields[i].FieldName == "Lesson Options") {
-                                var value = registration.RegistrationFields[i].Value;
-                                if (value == null) {
-                                    $.lessonOption = "No";
-                                } else {
-                                    $.lessonOption = registration.RegistrationFields[i].Value.Label || "No";
+                        var tripConfirmedLesson = fieldValue(data, TripConfirmedLesson);
+                        if (tripConfirmedLesson != undefined && tripConfirmedLesson != '') {
+                            $.lessonOption = tripConfirmedLesson;
+                            appendMemberName($.lessonOption + ' Lesson');
+                        } else {
+                            for (i=0; i < $.registration.RegistrationFields.length; i++) {
+                                if ($.registration.RegistrationFields[i].FieldName == "Lesson Options") {
+                                    var value = $.registration.RegistrationFields[i].Value;
+                                    if (value == null) {
+                                        $.lessonOption = "No";
+                                    } else {
+                                        $.lessonOption = $.registration.RegistrationFields[i].Value.Label || "No";
+                                    }
+                                    appendMemberName($.lessonOption + ' Lesson');
+                                    break;
                                 }
-                                appendMemberName($.lessonOption + ' Lesson');
-                                break;
                             }
                         }
                     }
@@ -246,12 +252,12 @@ function FLSCputMemeberData(api, memberID, fieldValues, fSuccess, fError) {
                         fieldValues: fieldValues
                     },
                     success: function(data, textStatus, jqXhr){
-                        console.log('SUCCESS PUT member: ' + memberID, fieldValues);
-                        fSuccess(fieldValues, textStatus)
+                        console.log('SUCCESS PUT member: ' + memberID);
+                        fSuccess(fieldValues, textStatus) || { };
                     },
-                    error: function(data, textStatus, jqXhr){
-                        console.log('**FAILURE PUT member: ' + memberID, fieldValues);
-                        fError(fieldValues, textStatus)
+                    error: function(data, textStatus, jqXhr) {
+                        console.log('**FAILURE PUT member: ' + memberID);
+                        fError(fieldValues, textStatus) || { };
                     }
             });
             
@@ -282,7 +288,7 @@ function FLSCcheckInAM(api, memberID, busNumber, busSeat, lessonOption, notes) {
             FLSCwindowAlert('Check in successful. Bus ' + busNumber + ' Seat ' + busSeat, FLSCwindowBack);
         }, 
         function(fieldValues, textStatus) {
-            FLSCwindowAlert("Failed to update contact. See console for details " + textStatus);
+            FLSCwindowAlert("Failed to update contact. Try again. You may not have permission. " + textStatus);
         });
 }
 
@@ -301,7 +307,7 @@ function FLSCcheckIn(api, memberID, checkInType, notes) {
             FLSCwindowAlert('Check in ' + checkInType + ' successful', FLSCwindowBack);
         }, 
         function(fieldValues, textStatus) {
-            FLSCwindowAlert('Check in for ' + checkInType + ' FAILED. Try again. ' + textStatus);
+            FLSCwindowAlert('Check in for ' + checkInType + ' FAILED. Try again. You may not have permission. ' + textStatus);
         });
 }
 
@@ -329,7 +335,7 @@ function FLSCactionReportNote(api, memberID, text, reportType, reportName) {
             FLSCwindowAlert('%s reported'.format(reportName), FLSCwindowBack);
         },
         function(fieldValues, textStatus) {
-            FLSCwindowAlert('%s report failed (%s). Try again'.format(reportType, textStatus));
+            FLSCwindowAlert('%s report failed (%s). Try again. You may not have permission. '.format(reportType, textStatus));
         }
     );
 }
@@ -428,7 +434,7 @@ function CAmemberQuery(api, query, fields, completion) {
     });
 }
 
-function FLSCresetTripFields(api, memberID, completion) {
+function FLSCresetTripFields(api, memberID, completion, resultCount) {
     var fieldValues = [
         { fieldName: TripCheckInMorning, value: null },
         { fieldName: TripCheckInLunch, value: null },
@@ -453,6 +459,7 @@ function FLSCresetTripFields(api, memberID, completion) {
     FLSCputMemeberData(api, memberID, fieldValues, 
         function(fieldValues, textStatus) {
             console.log('%s data reset successfully'.format(memberID));
+            completion(api, resultCount);
         },
         function(fieldValues, textStatus) {
             console.log('data reset FAILED ' + textStatus);
@@ -467,14 +474,13 @@ function FLSCresetTripFieldsAll(api, resultCount) {
                                                     "('TripBusNumber' ne ''      and 'TripBusNumber' ne NULL) or " + 
                                                     "('TripBusSeat' ne ''        and 'TripBusSeat' ne NULL) or " + 
                                                     "('TripCheckInLunch' ne ''   and 'TripCheckInLunch' ne NULL) or " + 
-                                                    "('TripCheckInDepart' ne ''  and 'TripCheckInDepart' ne NULL) or " + 
+                                                    "('TripConfirmedLesson' ne '' and 'TripConfirmedLesson' ne NULL) or " + 
                                                     "('TripCheckInLesson' ne ''  and 'TripCheckInLesson' ne NULL) or " + 
                                                     "('TripCheckInTesting' ne '' and 'TripCheckInTesting' ne NULL) or " + 
                                                     "('TripViolationDate' ne ''  and 'TripViolationDate' ne NULL) or " + 
                                                     "('TripViolationNotes' ne '' and 'TripViolationNotes' ne NULL) or " + 
                                                     "('TripLastUpdateDate' ne '' and 'TripLastUpdateDate' ne NULL) or " + 
-                                                    "('TripTestDate' ne ''       and 'TripTestDate' ne NULL) or " + 
-                                                    "('TripBusCaptain' ne ''     and 'TripBusCaptain' ne NULL) )",
+                                                    "('TripTestDate' ne ''       and 'TripTestDate' ne NULL) )",
                                         '$top' : '1'}),
 
         success: function (data, textStatus, jqXhr) {
@@ -484,9 +490,20 @@ function FLSCresetTripFieldsAll(api, resultCount) {
             }
             
             for (var i = 0; i < contacts.length; i++) {
-                console.log('resetting ', resultCount, contacts[i].LastName, contacts[i].FirstName);
-                FLSCresetTripFields(api, contacts[i].Id);
-                FLSCresetTripFieldsAll(api, ++resultCount);
+                console.log('resetting ', resultCount, contacts[i].LastName, contacts[i].FirstName, 
+                    'TripBusNumber %s'.format(fieldValue(contacts[i], 'TripBusNumber')), 
+                    'TripBusSeat %s'.format(fieldValue(contacts[i], 'TripBusSeat')), 
+                    'TripCheckInLunch %s'.format(fieldValue(contacts[i], 'TripCheckInLunch')), 
+                    'TripConfirmedLesson %s'.format(fieldValue(contacts[i], 'TripConfirmedLesson')), 
+                    'TripCheckInLesson %s'.format(fieldValue(contacts[i], 'TripCheckInLesson')), 
+                    'TripCheckInTesting %s'.format(fieldValue(contacts[i], 'TripCheckInTesting')), 
+                    'TripViolationDate %s'.format(fieldValue(contacts[i], 'TripViolationDate')), 
+                    'TripViolationNotes %s'.format(fieldValue(contacts[i], 'TripViolationNotes')), 
+                    'TripLastUpdateDate %s'.format(fieldValue(contacts[i], 'TripLastUpdateDate')), 
+                    'TripTestDate %s'.format(fieldValue(contacts[i], 'TripTestDate'))
+                    );
+
+                FLSCresetTripFields(api, contacts[i].Id, FLSCresetTripFieldsAll, ++resultCount);
             }
         },
         error: function (data, textStatus, jqXhr) {

@@ -11,8 +11,8 @@ const FLSCHotline = '805-635-7669';
 
 // trip configurations
 const maxRowsPerBus = 16;
-const maxBusesPerTrip = 5;
-$.todayOverride = '2020-01-26'; // undefined; // set to undefined for production 
+const maxBusesPerTrip = 6;
+$.todayOverride = '2020-02-02'; // '2020-03-18'; // undefined; // set to undefined for production 
  
 // field value definitions
 const MembershipLevelChaperone = 1088585;
@@ -276,9 +276,10 @@ function FLSCsms(phoneNumber) {
     //
 }
 
-function radioSelection(radioName, optionName, onchange) {
-    if (onchange != undefined) {
-        onchange = 'onchange="%s;"'.format(onchange);
+function radioSelection(radioName, optionName, onchangeFn) {
+    var onchange = '';
+    if (onchangeFn != undefined) {
+        onchange = 'onchange="%s;"'.format(onchangeFn);
     }
-    return '<input id="%s" type="radio" name="%s" id="%s" value="%s" %s>\n<label for="%s">%s</label><br>'.format(radioName, radioName, optionName, optionName, optionName, optionName, onchange);
+    return '<input id="%s" type="radio" name="%s" id="%s" value="%s" %s>\n<label for="%s">%s</label><br>'.format(radioName, radioName, optionName, optionName, onchange, optionName, optionName);
 }

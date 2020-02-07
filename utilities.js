@@ -12,13 +12,19 @@ const FLSCHotline = '805-635-7669';
 // trip configurations
 const maxRowsPerBus = 16;
 const maxBusesPerTrip = 6;
-$.todayOverride = '2020-02-02'; // '2020-03-18'; // undefined; // set to undefined for production 
+$.todayOverride = '2020-02-08'; // '2020-01-18'; //  undefined; // set to undefined for production '2020-03-18'; // 
  
 // field value definitions
 const MembershipLevelChaperone = 1088585;
 const MembershipLevelStudent = 1089064;
 const MembershipLevelSibling = 1092553;
 
+class WAObject {
+    constructor(Label, Id) {
+        this.Label = Label;
+        this.Id = Id;
+    }
+}
 
 String.prototype.format = function() {
     var newStr = this, i = 0;
@@ -127,6 +133,22 @@ function fieldValue(data, name) {
     }
     return undefined;
 }
+
+function fieldValue2(data, name) {
+    if (data == undefined || name == undefined) {
+        return '';
+    }
+    if (data.FieldValues == undefined) {
+        return '';
+    }
+    for (index = 0; index < data.FieldValues.length; index++) { 
+        if (data.FieldValues[index].FieldName == name) {
+            return (data.FieldValues[index].Value == null) ? '' : data.FieldValues[index].Value;
+        }
+    }
+    return undefined;
+}
+
 
 function memberStatusBackgroundStyle(memberStatus) {
     // any 'restricted' member status receives a red background color

@@ -4,13 +4,6 @@
 
 // caCertification.js
 
-class WAObject {
-    constructor(Label, Id) {
-        this.Label = Label;
-        this.Id = Id;
-    }
-}
-
 const evalFields = {
     '12469877' : 'ski', 
     '12469878' : 'board',
@@ -109,7 +102,7 @@ function saveForm() {
         fieldValues.push({ fieldName: TripChapNotes, value: notes });
     }
     
-    FLSCputMemeberData($.api, $.memberID, fieldValues, 
+    FLSCputMemberData($.api, $.memberID, fieldValues, 
         function(fieldValues, textStatus) {
             FLSCwindowAlert('Certification saved successfully');
             FLSCwindowBack();
@@ -132,7 +125,7 @@ function resetCertification() {
         { fieldName:TripTestDate, value: null },
     ];
         
-    FLSCputMemeberData($.api, $.memberID, fieldValues, 
+    FLSCputMemberData($.api, $.memberID, fieldValues, 
         function(fieldValues, textStatus) {
             FLSCwindowAlert('Certification reset successfully');
             FLSCwindowBack();

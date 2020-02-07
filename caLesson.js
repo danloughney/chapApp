@@ -4,9 +4,6 @@
  *
  *   TripConfirmedLesson:
  *       "LessonName" - user confirmed original selected lesson
- *       "ADD LessonName" - user did not register for a lesson, but added it at the morning check-in
- *       "CHG LessonName ORIG OriginalLessonName" - user changed lesson from OriginalLessonName to LessonName
- *
  */
 
 class CheckInReady {
@@ -16,7 +13,7 @@ class CheckInReady {
         this.lessonSelected = lessonSelected || false;
    
         this.ready = function() {
-            return this.memberID & this.memberChecked; // & this.seatSelected & this.rowSelected; // & this.seatChecked & this.eventID ;
+            return this.memberID && this.eventID && this.lessonSelected; // & this.seatSelected & this.rowSelected; // & this.seatChecked & this.eventID ;
         }
     }
 }
@@ -24,7 +21,7 @@ class CheckInReady {
 function enableButton() {
     if ($.CIR.ready()) {
         const saveButton = 'saveButton';
-        document.getElementById().disabled = false;
+        document.getElementById(saveButton).disabled = false;
         document.getElementById(saveButton).className = "btn";
         console.log('button enabled');
         return;
@@ -39,7 +36,11 @@ document.addEventListener('DOMContentLoaded', function(){
         $.CIR = new CheckInReady();
         if ($.memberID) $.CIR.memberID = true;
     
-        document.getElementById('currentLesson').innerHTML = $.lessonOption;
+        if ($.lessonOption == 'No') {
+            document.getElementById('currentLesson').innerHTML = "Not signed up for a lesson";    
+        } else {
+            document.getElementById('currentLesson').innerHTML = $.lessonOption;
+        }
         if ($.eventID) $.CIR.eventID = true;
         
         enableButton();
@@ -53,22 +54,19 @@ document.addEventListener('DOMContentLoaded', function(){
                 return;
             }
        
-            // find the list of available lessons
-            // keep lesson name and value in dictionary 
-            // render the available lessons as a radio control
+            // X - find the list of available lessons
+            // ? - keep lesson name and value in dictionary 
+            // X - render the available lessons as a radio control
     
             var html = '';
             var eventRegistrationFields = event.Details.EventRegistrationFields;
             for (var i = 0; i < eventRegistrationFields.length; i++) {
                 if (eventRegistrationFields[i].FieldName == 'Lesson Options') {
-                    lessonOptions = eventRegistrationFields[i].AllowedValues;
-                    for (var j = 0; j < lessonOptions.length; j++) {
-                        if (lessonOptions[j].Label != null && lessonOptions[j].Label != $.lessonOption) {
-                            //onchange ISN'T working
-                            html += radioSelection('newLesson', lessonOptions[j].Label, function() {
-                                $CIR.lessonSelected = true;
-                                enableButton();
-                            }) + '<br>';
+                    $.lessonOptions = eventRegistrationFields[i].AllowedValues; // error for chaps where this is NULL (error on next line)
+                    for (var j = 0; j < $.lessonOptions.length; j++) {
+                        if ($.lessonOptions[j].Label != null && $.lessonOptions[j].Label != $.lessonOption.replace('ADD ', '').replace('CHG ', '')) {
+                            html += radioSelection('newLesson', $.lessonOptions[j].Label, 
+                                "$.CIR.lessonSelected = true;enableButton();") + '<br>';
                         }
                     }
                 }
@@ -78,18 +76,96 @@ document.addEventListener('DOMContentLoaded', function(){
     });
 });
 
-function execute() {
-    // read the radio buttons for the selected 
-    var seatElements = document.getElementsByName('seat');
-    for(var i = 0; i < seatElements.length; i++) { 
-        if(seatElements[i].checked) {
-            seat = seatElements[i].value;
+function lessonIdfromLabel(lessonLabel) {
+    for (var i = 0; i < $.lessonOptions.length; i++) {
+        if ($.lessonOptions[i].Label == lessonLabel) {
+            return $.lessonOptions[i].Id;
         }
     }
-    setCookie('seat', seat, 1);
+    return -1;
+}
+
+function execute() {
+    // read the radio buttons for the selected 
+    var newLessonRadio = document.getElementsByName('newLesson');
+    var selectedLessonLabel = '';
+    for(var i = 0; i < newLessonRadio.length; i++) { 
+        if(newLessonRadio[i].checked) {
+            selectedLessonLabel = newLessonRadio[i].value;
+            break;
+        }
+    }
+
+    var selectedLessonId = lessonIdfromLabel(selectedLessonLabel);
+
+    // var lessonInfo = ;
+    // if ($.lessonOption == 'No') {
+    //     lessonInfo = "%s".format(selectedLessonValue); // ADD 
+    // } else {
+    //     lessonInfo = "%s".format(selectedLessonValue); // CHG
+    // }
+
+    var fieldValues = [ 
+        { fieldName:TripConfirmedLesson, value: selectedLessonLabel },
+    ];
     
-    var seatNumber = row + seat;
-    checkInAM(busNumber, seatNumber, $.lessonOption, document.getElementById("notes").value);
+    FLSCputMemberData($.api, $.memberID, fieldValues, 
+        function(fieldValues, textStatus) {
+            // find the lesson options in the registration
+            for (var i=0; i< $.registration.RegistrationFields.length; i++) {
+                if ($.registration.RegistrationFields[i].FieldName == "Lesson Options") {
+                    if ($.registration.RegistrationFields[i].Value == null) {
+                        $.registration.RegistrationFields[i].Value = new WAObject(selectedLessonLabel, selectedLessonId);
+                    } else {
+                        $.registration.RegistrationFields[i].Value.Label = selectedLessonLabel
+                        $.registration.RegistrationFields[i].Value.Id = selectedLessonId;
+                    }
+                    break;
+                }
+            }
+
+            // if (i == $.registration.RegistrationFields.length) {
+            //     var waObject = 
+            //     $.registration.RegistrationFields.push(waObject);
+            // }
+
+            // fieldValues = [
+            //     { fieldName: 'RegistrationFields', value: [{ fieldName: 'Lesson Options', value: $.registration.RegistrationFields }] }
+            // ];
+            fieldValues = [
+                    // { fieldName : 'Organization', value: 'DanTest' },
+                    //{ fieldName: 'RegistrationFields', value: $.registration.RegistrationFields }
+                    { fieldName: 'Lesson Options', value: $.registration.RegistrationFields[i].Value }
+            ];
+
+            // update the registration
+            $.api.apiRequest({
+                apiUrl: $.api.apiUrls.registration($.registration.Id),
+                    method: "PUT",
+                    data: { id: $.registration.Id, 
+                            fieldValues: fieldValues
+                        },
+                                    
+                        //                                                         { fieldName: 'RegistrationFields', 
+                        //                                                               value: $.registration.RegistrationFields }
+                        //                                                       ] 
+                        //             }
+                        //         ] 
+                        //   },
+                    success: function(data, textStatus, jqXhr){
+                        console.log('SUCCESS PUT Registration');
+                        FLSCwindowAlert("Lesson successfully changed to " + selectedLessonLabel, FLSCwindowBack);                        
+                    },
+                    error: function(data, textStatus, jqXhr) {
+                        console.log('**FAILURE PUT Registration:' + textStatus);
+                        FLSCwindowAlert("Lesson change not saved " + textStatus + ". Try again.", { });
+                    }
+            });
+        }, 
+        function(fieldValues, textStatus) {
+            FLSCwindowAlert("Lesson change not saved " + textStatus + ". Try again.", { });
+        }
+    );
 }
 
 function checkInAM (busNumber, seatNumber, lessonOption, notes) {

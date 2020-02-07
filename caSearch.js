@@ -58,10 +58,13 @@ class BusReport {
 
 const listTodayTrip = "Registered for Today's Trip";
 const listCheckedInTodayTrip = "Checked In on Bus";
-const listMorningCheckIn = 'Morning Check In';
+const listMorningCheckIn = 'Morning Check In (Students)';
+const listMorningCheckInCandS = 'Morning Check In (Chaps and Sibs)';
+
 const listViolation = "Violations";
 
-const listMissedLunch = 'Lunch Check In';
+const listLunchCheckIn = 'Lunch Check In';
+const listMissedLunch = 'Missed Lunch Check In';
 
 const listInTesting = "Testing Evaluation";
 const listTestResults = 'Testing Result Report';
@@ -69,7 +72,7 @@ const listTestingRegistration = 'Testing Registration';
 
 const listFirstAid = 'First Aid';
 const listInjury = 'Injuries';
-const listBusReport = 'Bus Report';
+const listBusReport = 'Trip Report';
 
 const listAllActiveMembers = 'All Students';
 const listAllActiveSiblings = 'All Siblings';
@@ -81,7 +84,9 @@ const listInLessons = 'Checked In for Lesson'; // this isn't very useful
 const morningLists = [
     listTodayTrip,
     listMorningCheckIn,
+    listMorningCheckInCandS,
     // listCheckedInTodayTrip,
+    listLunchCheckIn,
     listMissedLunch,
 ];
 
@@ -296,12 +301,21 @@ const searches = {
         selectBasicFields, 
         sortRegistrations),
 
-    'Morning Check In' : new SavedSearch('Morning Check In', 
+    'Morning Check In (Students)' : new SavedSearch('Morning Check In (Students)', 
         'registrationsNotCheckedIn',
-        'All students, siblings, and chaperones who are registered for today\'s trip, but haven\'t checked in',
+        'All students who are registered for today\'s trip, but haven\'t checked in',
         filterCheckedIn,
         selectBasicFields,
         sortRegistrations),
+
+    'Morning Check In (Chaps and Sibs)' : new SavedSearch('Morning Check In (Chaps and Sibs)', 
+        'registrationsNotCheckedInChapsandSibs',
+        'All chaperones and siblings who are registered for today\'s trip, but haven\'t checked in',
+        filterCheckedIn,
+        selectBasicFields,
+        sortRegistrations),
+
+        
 
     'Checked In on Bus' : new SavedSearch('Checked In on Bus', 
                                         'contacts',
@@ -399,6 +413,14 @@ const searches = {
                                         violationFormatter,
                                         ),
 
+    'Missed Lunch Check In'     : new SavedSearch('Missed Lunch Check In', 
+                                        'contacts',
+                                        'Students and Siblings who have not checked in for lunch.',
+                                        "('Status' eq 'Active' AND 'TripCheckInMorning' ne NULL and 'TripCheckInLunch' eq NULL AND 'MembershipLevelId' ne %s)".format(MembershipLevelChaperone),
+                                        selectBasicFields, 
+                                        sortAlphabetically, 
+                                        undefined), // default formatter
+
     'Lunch Check In'     : new SavedSearch('Lunch Check In', 
                                         'contacts',
                                         'Students and Siblings who have not checked in for lunch.',
@@ -406,6 +428,7 @@ const searches = {
                                         selectBasicFields, 
                                         sortAlphabetically, 
                                         lunchRegistrationFormatter),
+
 
     // return 1 to include the record, 0 to exclude it
     'All Students' : new SavedSearch('All Students', 
@@ -429,7 +452,7 @@ const searches = {
             selectBasicFields, 
             sortAlphabetically),
 
-    'Bus Report'    : new SavedSearch('Bus Report',
+    'Trip Report'    : new SavedSearch('Trip Report',
             'contacts',
             'Summary of students, siblings, chaperones, with lessons, by bus. Lists all students with detention. Export data and send to the mountain.',
             filterCheckedIn, 
@@ -598,6 +621,23 @@ function td(value) {
 function th(value, width) {
     return '<th width="%s" align="center">%s</th>'.format(width || '10%', value);
 }
+
+// total ticket summary
+// total tickets            123
+// students + siblings      100
+// chaps                    23
+
+// Lesson Summary
+// Advanced Ski             3
+// Advanced Board           5
+// Intermediate Ski         1
+// Beginner Ski             2
+
+// By Bus     Total         Student/Sibs    Chaps       Lessons
+//   1          45             37             2           8            6
+//   2
+//   3
+//   4
 
 function busReportHTML(buses) {
     var totals = new BusReport(0);

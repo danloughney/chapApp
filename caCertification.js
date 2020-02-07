@@ -104,8 +104,7 @@ function saveForm() {
     
     FLSCputMemberData($.api, $.memberID, fieldValues, 
         function(fieldValues, textStatus) {
-            FLSCwindowAlert('Certification saved successfully');
-            FLSCwindowBack();
+            FLSCwindowAlert('Certification saved successfully', FLSCwindowBack);
         }, 
         function(fieldValues, textStatus) {
             FLSCwindowAlert("Update failed. Try again. " + textStatus);
@@ -127,8 +126,7 @@ function resetCertification() {
         
     FLSCputMemberData($.api, $.memberID, fieldValues, 
         function(fieldValues, textStatus) {
-            FLSCwindowAlert('Certification reset successfully');
-            FLSCwindowBack();
+            FLSCwindowAlert('Certification reset successfully', FLSCwindowBack);
         }, 
         function(fieldValues, textStatus) {
             FLSCwindowAlert("Reset failed. Try again. " + textStatus);

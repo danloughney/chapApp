@@ -10,22 +10,34 @@ document.addEventListener("DOMContentLoaded", function() {
     
     $.when($.api.init()).done(function(){
         // alert('ready');
+        document.getElementById('tripDate').value = $.todayOverride || new Date().toJSON().slice(0,10);
     });
 });
 
+function tripReadiness(tripDate) {
+    document.getElementById('outputLegend').innerHTML = "Readiness";
+    document.getElementById('outputText').innerHTML = 'Please wait...';
+    FLSCTripReadiness($.api, tripDate, 'outputText');
 
-function resetTripData() {
-    if (window.confirm("Do you REALLY want to reset the TRIP fields?")) {
-        FLSCresetTripFields($.api, $.memberID);
-    }
+    document.getElementById('tripReadinessBtn').disabled = true;
+    document.getElementById('tripReadinessBtn').className = "btnInactive";
 }
+
+function tripStatus() {
+    document.getElementById('outputLegend').innerHTML = "Trip Status";
+    document.getElementById('outputText').innerHTML = 'Please wait...';
+    FLSCTripStatus($.api, 'outputText');
+}
+
 function resetAllTripData() {
-    if (window.confirm("Do you REALLY want to reset the TRIP fields?")) {
-        FLSCresetTripFieldsAll($.api, 0);
+    if (window.confirm("Do you REALLY want to reset the \"Trip\" fields?")) {
+        document.getElementById('outputLegend').innerHTML = "Reset Trip Fields";
+        document.getElementById('outputText').innerHTML = "Please wait...";
+        FLSCresetTripFieldsAll($.api, 1, 'outputText');
     }
 }
 
- function generateScript(script) {
+function generateScript(script) {
     var params = { 
         '$filter' : "'Status' eq 'Active'",
     };

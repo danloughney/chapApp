@@ -145,6 +145,22 @@ const sortAlphabetically = function(a, b) {
     return x < y ? -1 : x > y ? 1 : 0;
 };
 
+const sortLessonsAlphabetically = function(a, b) {
+    if (a == undefined && b != undefined) {
+        return -1;
+    } 
+    if (a != undefined && b == undefined) { 
+        return 1;
+    }
+    if (a == undefined && b == undefined) {
+        return 0;
+    }
+
+    var x = '%s|%s|%s'.format(fieldValue(a, TripConfirmedLesson), a.LastName, a.FirstName).toLowerCase();
+    var y = '%s|%s|%s'.format(fieldValue(b, TripConfirmedLesson), b.LastName, b.FirstName).toLowerCase();
+    return x < y ? -1 : x > y ? 1 : 0;
+};
+
 const sortBySeat = function(a, b) {
     var x = '%s|%s'.format(fieldValue(a, TripBusNumber), fieldValue(a, TripBusSeat));
     var y = '%s|%s'.format(fieldValue(b, TripBusNumber), fieldValue(b, TripBusSeat));
@@ -333,10 +349,6 @@ const searches = {
         selectBasicFields,
         sortRegistrations),
 
-    'Lesson Changes' : new SavedSearch('Lesson Changes', 
-        'changedLessons',
-        'Report of added or changed lessons'),
-
     'Checked In on Bus' : new SavedSearch('Checked In on Bus', 
                                         'contacts',
                                         'Everyone who has checked in on the morning bus.',
@@ -422,7 +434,13 @@ const searches = {
                                         'Students that have checked in for their lesson.',
                                         "('Status' eq 'Active' AND 'TripCheckInLesson' ne NULL)", 
                                         selectBasicFields, 
-                                        sortAlphabetically),
+                                        sortLessonsAlphabetically),
+
+    'Lesson Changes' : new SavedSearch('Lesson Changes', 
+                                        'changedLessons',
+                                        'Report of added or changed lessons'),
+                                
+                                
                                         
     'Violations'                : new SavedSearch('Violations', 
                                         'contacts',

@@ -20,6 +20,10 @@ var formatRegistrationCheckin = function(registration) {
     );
 }
 
+const withIndexNo = 0;
+const withIndexAlpha = 1;
+const withIndexLesson = 2;
+
 function renderResults(contacts, formatFunction, withIndex) {
     if (contacts == undefined) {
         return;
@@ -37,19 +41,33 @@ function renderResults(contacts, formatFunction, withIndex) {
         }
         if ($.search.includeFn(contacts[i]) == true) {
             resultCount ++;
-            if (withIndex) {
-                var name = contacts[i].LastName || contacts[i].DisplayName;
-                if (lastLabel != name.substring(0, 1).toUpperCase()) {
-                    lastLabel = name.substring(0, 1).toUpperCase();
-                    labelList.push(lastLabel);
-                    html += '<tr><td align="center"><b>%s</b><a id=%s></a><td></tr>'.format(lastLabel, lastLabel);
-                }
+            switch(withIndex) {
+                case withIndexNo:
+                    break;
+
+                case withIndexAlpha:
+                    var name = contacts[i].LastName || contacts[i].DisplayName;
+                    if (lastLabel != name.substring(0, 1).toUpperCase()) {
+                        lastLabel = name.substring(0, 1).toUpperCase();
+                        labelList.push(lastLabel);
+                        html += '<tr><td align="center"><b>%s</b><a id=%s></a><td></tr>'.format(lastLabel, lastLabel);
+                    }
+                    break;
+
+                case withIndexLesson:
+                    var name = fieldValue(contacts[i], TripConfirmedLesson);
+                    if (lastLabel != name.toUpperCase()) {
+                        lastLabel = name.toUpperCase();
+                        labelList.push(lastLabel);
+                        html += '<tr><td align="center"><b><br>%s</b><a id=%s></a><td></tr>'.format(lastLabel, lastLabel);
+                    }
+                    break;
             }
             html += formatFunction(contacts[i]);
         }
    }
 
-   if (withIndex) {
+   if (withIndex != withIndexNo) {
         var indexHtml = ''; 
         for (var i = 0;i<labelList.length; i++) {
             indexHtml += '<a href="#%s">%s</a><br>'.format(labelList[i], labelList[i]);
@@ -100,24 +118,19 @@ function todaysRegistrations(membershipLevel, completion) {
                 apiUrl:$.api.apiUrls.registrations(params),
                 success: function (data, textStatus, jqXhr) {
                     completion(data);
-                    // renderResults(data, formatRegistration, true);
                 },
                 error: function (data, textStatus, jqXhr) {
-                    //document.getElementById('listResults2').innerHTML = html = 'failed getting search result: ' + textStatus;
                     completion([]);
                 }
             });
-
         },
         error: function (data, textStatus, jqXhr) {
-            //document.getElementById('listResults2').innerHTML = html = 'failed getting search result: ' + textStatus;
             completion([]);
         }
     });
 }
 
 document.addEventListener("DOMContentLoaded", function() {
-
     $.listName = $.urlParam('name');
     $.search = searches[$.listName];
 
@@ -134,7 +147,21 @@ document.addEventListener("DOMContentLoaded", function() {
                                                      // '$select' : search.selector }),
                     success: function (data, textStatus, jqXhr) {
                         document.getElementById('listResults').innerHTML = '';
-                        renderResults(data.Contacts, $.search.formatter, ($.search.name == listInTesting) ? false : true);
+                        var withIndex;
+                        switch($.search.name) {
+                            case listInTesting:
+                                withIndex = withIndexNo;
+                                break;
+
+                            case listInLessons:
+                                withIndex = withIndexLesson;
+                                break;
+
+                            default:
+                                withIndex = withIndexAlpha;
+                                break;
+                        }
+                        renderResults(data.Contacts, $.search.formatter, withIndex);
                     },
                     error: function (data, textStatus, jqXhr) {
                         document.getElementById('listResults').innerHTML = html = 'failed getting search result: ' + textStatus;
@@ -151,7 +178,7 @@ document.addEventListener("DOMContentLoaded", function() {
                         contacts = contacts.concat(data);
                         todaysRegistrations('Chaperone', function(data) {
                             contacts = contacts.concat(data);
-                            renderResults(contacts, formatRegistration, true);
+                            renderResults(contacts, formatRegistration, withIndexAlpha);
                         });
                     });
                 });
@@ -177,7 +204,7 @@ document.addEventListener("DOMContentLoaded", function() {
                                     contacts[i] = null;
                                 }
                             }
-                            renderResults(contacts, formatRegistrationCheckin, true);
+                            renderResults(contacts, formatRegistrationCheckin, withIndexAlpha);
                         },
                         error: function (data, textStatus, jqXhr) {
                             console.log(textStatus);
@@ -208,7 +235,7 @@ document.addEventListener("DOMContentLoaded", function() {
                                         contacts[i] = null;
                                     }
                                 }
-                                renderResults(contacts, formatRegistrationCheckin, true);
+                                renderResults(contacts, formatRegistrationCheckin, withIndexAlpha);
                             },
                             error: function (data, textStatus, jqXhr) {
                                 console.log(textStatus);
@@ -242,7 +269,7 @@ document.addEventListener("DOMContentLoaded", function() {
                                             contacts[i] = null;
                                         }
                                     }
-                                    renderResults(contacts, formatRegistrationCheckin, true);
+                                    renderResults(contacts, formatRegistrationCheckin, withIndexAlpha);
                                 },
                                 error: function (data, textStatus, jqXhr) {
                                     console.log(textStatus);

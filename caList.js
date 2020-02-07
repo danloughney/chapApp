@@ -252,6 +252,65 @@ document.addEventListener("DOMContentLoaded", function() {
                     });
                 });
                 break;
+
+            case 'changedLessons':
+                document.getElementById('listResults').innerHTML = '';
+                var registrations = [];
+                var registeredLessons = { };
+
+                todaysRegistrations('Student', function(data) {
+                    registrations = registrations.concat(data);
+                    todaysRegistrations('Sibling', function(data) {
+                        registrations = registrations.concat(data);
+
+                        // create dictionary of members with registered lessons
+                        for (var i = 0; i < registrations.length; i++) {
+                            for (var j=registrations[i].RegistrationFields.length -1; j >= 0 ; j--) {
+                                if (registrations[i].RegistrationFields[j].FieldName == "Lesson Options") {
+                                    var value = registrations[i].RegistrationFields[j].Value;
+                                    if (value != null) {
+                                        registeredLessons[registrations[i].Contact.Id.toString()] = value.Label;
+                                    }
+                                    break;
+                                }
+                            }
+                        }
+                        
+                        $.api.apiRequest({
+                            apiUrl: $.api.apiUrls.contacts({ '$filter' : "'TripConfirmedLesson' ne NULL AND 'TripConfirmedLesson' ne ''"}),
+                            success: function (data, textStatus, jqXhr) {
+                                var html = '<table width="100%" border="1" cellpadding="1" cellspacing="1" width="200px" style="border-collapse:collapse;">';
+
+                                var lessonContacts = data.Contacts;
+                                for (var i = 0;i<lessonContacts.length;i++) {
+                                    var key = lessonContacts[i].Id.toString();
+                                    if (registeredLessons[key] === undefined) {
+                                        html += '<tr><td width="20%">&nbsp;%s, %s</td><td>&nbsp;Added "%s"</td></tr>'.format(
+                                            lessonContacts[i].LastName, 
+                                            lessonContacts[i].FirstName, 
+                                            fieldValue(lessonContacts[i], TripConfirmedLesson));
+                                        continue;
+                                    }
+                                    if (registeredLessons[key] != fieldValue(lessonContacts[i], TripConfirmedLesson)) {
+                                        html += '<tr><td width="20%">&nbsp;%s, %s</td><td>&nbsp;Changed to "%s" from "%s"</td></tr>'.format(
+                                            lessonContacts[i].LastName, 
+                                            lessonContacts[i].FirstName, 
+                                            registeredLessons[key],
+                                            fieldValue(lessonContacts[i], TripConfirmedLesson));
+                                        continue;
+                                    }
+                                }
+
+                                html += '</table>';
+                                document.getElementById('listResults').innerHTML = html;
+                            },
+                            error: function (data, textStatus, jqXhr) {
+                                console.log(textStatus);
+                            }
+                        });
+                    });
+                });
+                break;
     
         }
        

@@ -144,7 +144,7 @@ document.addEventListener("DOMContentLoaded", function() {
             
             case 'registrations':
                 document.getElementById('listResults').innerHTML = '';
-                var contacts = [];
+                var contacts = [];//should be registrations
                 todaysRegistrations('Student', function(data) {
                     contacts = contacts.concat(data);
                     todaysRegistrations('Sibling', function(data) {
@@ -158,39 +158,100 @@ document.addEventListener("DOMContentLoaded", function() {
                 break;
 
             case 'registrationsNotCheckedIn':
-                    document.getElementById('listResults').innerHTML = '';
-                    var contacts = [];
-                    todaysRegistrations('Student', function(data) {
-                        contacts = contacts.concat(data);
-                        todaysRegistrations('Sibling', function(data) {
-                            contacts = contacts.concat(data);
-                            todaysRegistrations('Chaperone', function(data) {
-                                contacts = contacts.concat(data);
-                                var alreadyCheckedIn = { };
-                                $.api.apiRequest({
-                                    apiUrl: $.api.apiUrls.contacts({ '$filter' : filterCheckedIn }),
-                                    success: function (data, textStatus, jqXhr) {
-                                        var checkedInContacts = data.Contacts;
-                                        for (var i = 0;i<checkedInContacts.length;i++) {
-                                            alreadyCheckedIn[checkedInContacts[i].Id] = checkedInContacts[i];
-                                        }
+                document.getElementById('listResults').innerHTML = '';
+                var contacts = [];
+                todaysRegistrations('Student', function(data) {
+                contacts = contacts.concat(data);
+                    var alreadyCheckedIn = { };
+                    $.api.apiRequest({
+                        apiUrl: $.api.apiUrls.contacts({ '$filter' : filterCheckedIn }),
+                        success: function (data, textStatus, jqXhr) {
+                            var checkedInContacts = data.Contacts;
+                            for (var i = 0;i<checkedInContacts.length;i++) {
+                                alreadyCheckedIn[checkedInContacts[i].Id] = checkedInContacts[i];
+                            }
 
-                                        // remove any already checked in kids
-                                        for (i = 0; i < contacts.length; i++) {
-                                            if (alreadyCheckedIn[contacts[i].Contact.Id] != undefined) {
-                                                contacts[i] = null;
-                                            }
-                                        }
-                                        renderResults(contacts, formatRegistrationCheckin, true);
-                                    },
-                                    error: function (data, textStatus, jqXhr) {
-                                        console.log(textStatus);
+                            // remove any already checked in kids
+                            for (i = 0; i < contacts.length; i++) {
+                                if (alreadyCheckedIn[contacts[i].Contact.Id] != undefined) {
+                                    contacts[i] = null;
+                                }
+                            }
+                            renderResults(contacts, formatRegistrationCheckin, true);
+                        },
+                        error: function (data, textStatus, jqXhr) {
+                            console.log(textStatus);
+                        }
+                    });
+                });
+                break;
+
+            case 'registrationsNotCheckedInChapsandSibs':
+                document.getElementById('listResults').innerHTML = '';
+                var contacts = [];
+                todaysRegistrations('Sibling', function(data) {
+                    contacts = contacts.concat(data);
+                    todaysRegistrations('Chaperone', function(data) {
+                        contacts = contacts.concat(data);
+                        var alreadyCheckedIn = { };
+                        $.api.apiRequest({
+                            apiUrl: $.api.apiUrls.contacts({ '$filter' : filterCheckedIn }),
+                            success: function (data, textStatus, jqXhr) {
+                                var checkedInContacts = data.Contacts;
+                                for (var i = 0;i<checkedInContacts.length;i++) {
+                                    alreadyCheckedIn[checkedInContacts[i].Id] = checkedInContacts[i];
+                                }
+
+                                // remove any already checked in kids
+                                for (i = 0; i < contacts.length; i++) {
+                                    if (alreadyCheckedIn[contacts[i].Contact.Id] != undefined) {
+                                        contacts[i] = null;
                                     }
-                                });
+                                }
+                                renderResults(contacts, formatRegistrationCheckin, true);
+                            },
+                            error: function (data, textStatus, jqXhr) {
+                                console.log(textStatus);
+                            }
+                        });
+                    });
+                });
+                break;
+
+            case 'registrationsNotCheckedInALL':
+                document.getElementById('listResults').innerHTML = '';
+                var contacts = [];
+                todaysRegistrations('Student', function(data) {
+                    contacts = contacts.concat(data);
+                    todaysRegistrations('Sibling', function(data) {
+                        contacts = contacts.concat(data);
+                        todaysRegistrations('Chaperone', function(data) {
+                            contacts = contacts.concat(data);
+                            var alreadyCheckedIn = { };
+                            $.api.apiRequest({
+                                apiUrl: $.api.apiUrls.contacts({ '$filter' : filterCheckedIn }),
+                                success: function (data, textStatus, jqXhr) {
+                                    var checkedInContacts = data.Contacts;
+                                    for (var i = 0;i<checkedInContacts.length;i++) {
+                                        alreadyCheckedIn[checkedInContacts[i].Id] = checkedInContacts[i];
+                                    }
+
+                                    // remove any already checked in kids
+                                    for (i = 0; i < contacts.length; i++) {
+                                        if (alreadyCheckedIn[contacts[i].Contact.Id] != undefined) {
+                                            contacts[i] = null;
+                                        }
+                                    }
+                                    renderResults(contacts, formatRegistrationCheckin, true);
+                                },
+                                error: function (data, textStatus, jqXhr) {
+                                    console.log(textStatus);
+                                }
                             });
                         });
                     });
-                    break;
+                });
+                break;
     
         }
        

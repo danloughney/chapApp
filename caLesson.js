@@ -111,56 +111,59 @@ function execute() {
     
     FLSCputMemberData($.api, $.memberID, fieldValues, 
         function(fieldValues, textStatus) {
-            // find the lesson options in the registration
-            for (var i=0; i< $.registration.RegistrationFields.length; i++) {
-                if ($.registration.RegistrationFields[i].FieldName == "Lesson Options") {
-                    if ($.registration.RegistrationFields[i].Value == null) {
-                        $.registration.RegistrationFields[i].Value = new WAObject(selectedLessonLabel, selectedLessonId);
-                    } else {
-                        $.registration.RegistrationFields[i].Value.Label = selectedLessonLabel
-                        $.registration.RegistrationFields[i].Value.Id = selectedLessonId;
-                    }
-                    break;
-                }
-            }
+            FLSCwindowAlert("Lesson successfully changed to " + selectedLessonLabel, FLSCwindowBack);                        
+
+            // find the lesson options in the registration -- good code does not work
+            // for (var i=0; i< $.registration.RegistrationFields.length; i++) {
+            //     if ($.registration.RegistrationFields[i].FieldName == "Lesson Options") {
+            //         if ($.registration.RegistrationFields[i].Value == null) {
+            //             $.registration.RegistrationFields[i].Value = new WAObject(selectedLessonLabel, selectedLessonId);
+            //         } else {
+            //             $.registration.RegistrationFields[i].Value.Label = selectedLessonLabel
+            //             $.registration.RegistrationFields[i].Value.Id = selectedLessonId;
+            //         }
+            //         break;
+            //     }
+            // }
 
             // if (i == $.registration.RegistrationFields.length) {
             //     var waObject = 
             //     $.registration.RegistrationFields.push(waObject);
             // }
-
             // fieldValues = [
             //     { fieldName: 'RegistrationFields', value: [{ fieldName: 'Lesson Options', value: $.registration.RegistrationFields }] }
             // ];
-            fieldValues = [
-                    // { fieldName : 'Organization', value: 'DanTest' },
-                    //{ fieldName: 'RegistrationFields', value: $.registration.RegistrationFields }
-                    { fieldName: 'Lesson Options', value: $.registration.RegistrationFields[i].Value }
-            ];
 
-            // update the registration
-            $.api.apiRequest({
-                apiUrl: $.api.apiUrls.registration($.registration.Id),
-                    method: "PUT",
-                    data: { id: $.registration.Id, 
-                            fieldValues: fieldValues
-                        },
+            // good code should work, but doesn't
+            // fieldValues = [
+            //         // { fieldName : 'Organization', value: 'DanTest' },
+            //         //{ fieldName: 'RegistrationFields', value: $.registration.RegistrationFields }
+            //         { fieldName: 'Lesson Options', value: $.registration.RegistrationFields[i].Value }
+            // ];
+
+            // // update the registration
+            // $.api.apiRequest({
+            //     apiUrl: $.api.apiUrls.registration($.registration.Id),
+            //         method: "PUT",
+            //         data: { id: $.registration.Id, 
+            //                 fieldValues: fieldValues
+            //             },
                                     
-                        //                                                         { fieldName: 'RegistrationFields', 
-                        //                                                               value: $.registration.RegistrationFields }
-                        //                                                       ] 
-                        //             }
-                        //         ] 
-                        //   },
-                    success: function(data, textStatus, jqXhr){
-                        console.log('SUCCESS PUT Registration');
-                        FLSCwindowAlert("Lesson successfully changed to " + selectedLessonLabel, FLSCwindowBack);                        
-                    },
-                    error: function(data, textStatus, jqXhr) {
-                        console.log('**FAILURE PUT Registration:' + textStatus);
-                        FLSCwindowAlert("Lesson change not saved " + textStatus + ". Try again.", { });
-                    }
-            });
+            //             //                                                         { fieldName: 'RegistrationFields', 
+            //             //                                                               value: $.registration.RegistrationFields }
+            //             //                                                       ] 
+            //             //             }
+            //             //         ] 
+            //             //   },
+            //         success: function(data, textStatus, jqXhr){
+            //             console.log('SUCCESS PUT Registration');
+            //             FLSCwindowAlert("Lesson successfully changed to " + selectedLessonLabel, FLSCwindowBack);                        
+            //         },
+            //         error: function(data, textStatus, jqXhr) {
+            //             console.log('**FAILURE PUT Registration:' + textStatus);
+            //             FLSCwindowAlert("Lesson change not saved " + textStatus + ". Try again.", { });
+            //         }
+            // });
         }, 
         function(fieldValues, textStatus) {
             FLSCwindowAlert("Lesson change not saved " + textStatus + ". Try again.", { });

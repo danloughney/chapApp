@@ -39,6 +39,21 @@ class BusReport {
         this.siblings = 0;
         this.chaperones = 0;
         this.lessons = { };
+        this.totalLessons = 0;
+    }
+
+    addLesson(lessonName) {
+        if (lessonName === undefined || lessonName == '') {
+            return;
+        }
+        var lcount = this.lessons[lessonName];
+        if (lcount === undefined) {
+            lcount = 1;
+        } else {
+            lcount += 1;
+        }
+        this.lessons[lessonName] = lcount;
+        this.totalLessons += 1;
     }
 
     add(busReport) {
@@ -46,11 +61,13 @@ class BusReport {
         this.students += busReport.students;
         this.siblings += busReport.siblings;
         this.chaperones += busReport.chaperones;
-        for (var key in busReport.lessons) {
-            if (this.lessons[key] == undefined) {
-                this.lessons[key] = busReport.lessons[key];
+
+        for (var lessonName in busReport.lessons) {
+            this.totalLessons += busReport.lessons[lessonName];
+            if (this.lessons[lessonName] == undefined) {
+                this.lessons[lessonName] = busReport.lessons[lessonName];
             } else {
-                this.lessons[key] += busReport.lessons[key];
+                this.lessons[lessonName] += busReport.lessons[lessonName];
             }
         }
     }
@@ -80,6 +97,7 @@ const listAllChaperones = 'All Chaperones';
 
 const listLessonCheckIn = "Lesson Check In"; //xx have a lesson, but have not checked in. goes to lesson check-in
 const listInLessons = 'Checked In for Lesson'; // this isn't very useful
+const listLessonChanges = 'Lesson Changes';
 
 const morningLists = [
     listTodayTrip,
@@ -315,7 +333,9 @@ const searches = {
         selectBasicFields,
         sortRegistrations),
 
-        
+    'Lesson Changes' : new SavedSearch('Lesson Changes', 
+        'changedLessons',
+        'Report of added or changed lessons'),
 
     'Checked In on Bus' : new SavedSearch('Checked In on Bus', 
                                         'contacts',
@@ -343,7 +363,7 @@ const searches = {
     'Testing Registration'      : new SavedSearch('Testing Registration',
                                         'contacts',
                                         'Restricted students on today\'s trip. Use this page to check students in for mountain testing.', 
-                                        "'Status' eq 'Active' AND " + // 'TripCheckInMorning' ne NULL AND " + 
+                                        "'Status' eq 'Active' AND 'TripCheckInMorning' ne NULL AND " + 
                                             "('TripCheckInTesting' eq NULL OR 'TripCheckInTesting' eq '') AND " +
                                             "('Member Status' eq '12483746' OR 'Member Status' eq '12483747' OR 'Member Status' eq '12483748' OR 'Member Status' eq '12483749' OR 'Member Status' eq '12483750')",
                                         selectBasicFields, 
@@ -472,7 +492,7 @@ const searches = {
                 var buses = [];
                 buses.push(busReport);
 
-                var lessonsByBus = { };
+                // var lessonsByBus = { };
 
                 for (var i = 0; i < contacts.length; i++) {
                     var contact = contacts[i];
@@ -494,26 +514,29 @@ const searches = {
                                 console.log('incorrect membership level', contact.MembershipLevel.Name);
                         }
 
-                        var lesson = fieldValue(contact, TripConfirmedLesson);
-                        if (lesson != undefined && lesson != '') {
-                            var lcount = lessonsByBus[lesson];
-                            if (lcount == undefined) {
-                                lcount = 1;
-                            } else {
-                                lcount += 1;
-                            }
-                            lessonsByBus[lesson] = lcount;
-                        }        
+                        var lessonName = fieldValue(contact, TripConfirmedLesson);
+                        busReport.addLesson(lessonName);
+
+                        // if (lesson != undefined && lesson != '') {
+                        //     var lcount = lessonsByBus[lesson];
+                        //     if (lcount == undefined) {
+                        //         lcount = 1;
+                        //     } else {
+                        //         lcount += 1;
+                        //     }
+                        //     lessonsByBus[lesson] = lcount;
+                        //     busReport.totalLessons += lcount;
+                        // }        
                     } else {
-                        busReport.lessons = lessonsByBus;
-                        lessonsByBus = { };
+                        // busReport.lessons = lessonsByBus;
+                        // lessonsByBus = { };
                         bus ++;
                         busReport = new BusReport(bus);
                         buses.push(busReport);
                         --i; // reset i to count the person with code above
                     }
                 }
-                busReport.lessons = lessonsByBus;
+                //busReport.lessons = lessonsByBus;
 
                 var exportCode='<button onclick="exportCSV();" class="btnRed">Export</button><div id="csvData" hidden=true>%s</div>'.format(busReportCSV(buses));
                 document.getElementById('export').innerHTML = exportCode;
@@ -585,35 +608,6 @@ function lessonCount(lessons, lessonType) {
     return 0;
 }
 
-function busReportCSV(buses) {
-    var totals = new BusReport(0);
-    var lessonTypes = allLessons(buses);
-    var csv = 'bus, total, students, siblings, chaperones,';
-    for (var i = 0; i < lessonTypes.length; i++) {
-        csv += "%s, ".format(lessonTypes[i]);
-    }
-    csv += newline;
-
-    var data = '';
-    for (i = 0; i < buses.length; i++) {
-        totals.add(buses[i]);
-
-        data = '%s, %s, %s, %s, %s, '.format(buses[i].busNumber, buses[i].total, buses[i].students, buses[i].siblings, buses[i].chaperones);
-
-        for (var j = 0; j < lessonTypes.length; j++) {
-            data += "%s, ".format(lessonCount(buses[i].lessons, lessonTypes[j]));
-        }
-        csv += data + newline;
-    }
-    data = 'Total, %s, %s, %s, %s, '.format(totals.total, totals.students, totals.siblings, totals.chaperones);
-    for (var j = 0; j < lessonTypes.length; j++) {
-        data += "%s, ".format(lessonCount(totals.lessons, lessonTypes[j]));
-    }
-    csv += data + newline;
-
-    return csv;
-}
-
 function td(value) {
     return '<td align="center">%s</td>'.format(value);
 }
@@ -634,40 +628,73 @@ function th(value, width) {
 // Beginner Ski             2
 
 // By Bus     Total         Student/Sibs    Chaps       Lessons
-//   1          45             37             2           8            6
+//   1          45             37             2           8     
 //   2
 //   3
 //   4
 
 function busReportHTML(buses) {
     var totals = new BusReport(0);
-    var lessonTypes = allLessons(buses);
-
-    var html = '<table width="100%" align="left" valign="top">';
-    html += '<tr>%s%s%s%s%s'.format(th('Bus', '5%'), th('All'), th('Students'), th('Siblings'), th('Chaperones'));
-    for (var i = 0; i < lessonTypes.length; i++) {
-        html += th(lessonTypes[i]);
-    }
-    html += '</tr>';
-
-    for (i = 0; i < buses.length; i++) {
+    for (var i = 0; i < buses.length; i++) {
         totals.add(buses[i]);
-
-        html += '<tr>%s%s%s%s%s'.format(td(buses[i].busNumber), td(buses[i].total), td(buses[i].students), td(buses[i].siblings), td(buses[i].chaperones));
-        for (var j = 0; j < lessonTypes.length; j++) {
-            html += td(lessonCount(buses[i].lessons, lessonTypes[j]));
-        }
-        html += '</tr>';
     }
 
-    html += '<tr><td>&nbsp;</td></tr>';
-    html += '<tr>%s%s%s%s%s'.format(td("Totals"), td(totals.total), td(totals.students), td(totals.siblings), td(totals.chaperones));
-    for (j = 0; j < lessonTypes.length; j++) {
-        html += td(lessonCount(totals.lessons, lessonTypes[j]));
-    }
-    html += '</tr></table><p>&nbsp;<p><label class="labelBad">Detentions</label>';
+    var html = '<fieldset><legend>Ticket Summary</legend><table width="100%">' + 
+                '<tr><td width="20%">Total Tickets</td><td>%s</td></tr>'.format(totals.total) + 
+                '<tr><td>Students + Sibs</td><td>%s</td></tr>'.format(totals.students + totals.siblings) + 
+                '<tr><td>Chaperones</td><td>%s</td></tr>'.format(totals.chaperones) + 
+                '</table></fieldset><br>';
 
+    html += '<fieldset><legend>Lesson Summary</legend><table width="100%">' +
+            '<tr><td width="20%">Total Lessons</td><td>%s</td></tr>'.format(totals.totalLessons);
+    
+    var keys = Object.keys(totals.lessons).sort();
+    for (var i = 0; i < keys.length; i++) {
+        html += '<tr><td>%s</td><td>%s</td></tr>'.format(keys[i], totals.lessons[keys[i]]);
+    }
+    html += '</table></fieldset><br>';
+
+    html += '<fieldset><legend>Bus Summary</legend><table width="100%" align="center">' +
+            '<tr align="center"><td width="10%">By Bus</td><td width="20%">Total</td><td width="20%">Students & Sibs</td><td width="20%">Chaps</td><td width="20%">Lessons</td></tr>';
+    for (var i = 0; i < buses.length; i++) {    
+        html += '<tr align="center"><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>'.format(i+1, buses[i].total, buses[i].students+buses[i].siblings, buses[i].chaperones, buses[i].totalLessons);
+    }
+    html += '</table></fieldset>';
+
+    html += '<p>&nbsp;<p><label class="labelBad">Detentions</label>';
     return html;
+}
+
+function busReportCSV(buses) {
+    var totals = new BusReport(0);
+    for (var i = 0; i < buses.length; i++) {
+        totals.add(buses[i]);
+    }
+
+    var csv = 'Ticket Summary' + newline + 
+        'Total Tickets, %s'.format(totals.total) + newline + 
+        'Students + Sibs, %s'.format(totals.students + totals.siblings) + newline + 
+        'Chaperones, %s'.format(totals.chaperones) + newline + newline;
+
+
+    csv += 'Lesson Summary' + newline + 
+        'Total Lessons, %s'.format(totals.totalLessons) + newline;
+
+    var keys = Object.keys(totals.lessons).sort();
+    for (var i = 0; i < keys.length; i++) {
+        csv += '%s, %s'.format(keys[i], totals.lessons[keys[i]]) + newline;
+    }
+    csv += newline;
+
+    csv += 'Bus Summary' + newline +
+        'By Bus, Total, Students & Sibs, Chaps, Lessons' + newline;
+    
+    for (var i = 0; i < buses.length; i++) {    
+        csv += 'Bus %s, %s, %s, %s, %s'.format(i+1, buses[i].total, buses[i].students+buses[i].siblings, buses[i].chaperones, buses[i].totalLessons) + newline;
+    }
+    csv += newline;
+
+    return csv;
 }
 
 function exportCSV() {

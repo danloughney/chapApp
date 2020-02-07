@@ -158,7 +158,7 @@ function renderRow(rowType, rowNumber, className) {
 }
 
 document.addEventListener("DOMContentLoaded", function() {
-    $.listName = 'Bus Report';
+    $.listName = 'Trip Report';
 
     // read the bus number from the cookie
     var busNumber = getCookie('busNumber') || '1';

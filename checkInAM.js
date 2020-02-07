@@ -127,6 +127,11 @@ function checkInAM (busNumber, seatNumber, lessonOption, notes) {
 function changeRow(difference) {
     var row = document.getElementById('row').value;
 
+    if (row == '') {
+        document.getElementById('row').value = '01';
+        return;
+    }
+
     switch(difference) {
         case 1:
             if (row == maxRowsPerBus) {

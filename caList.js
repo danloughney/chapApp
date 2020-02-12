@@ -136,9 +136,12 @@ document.addEventListener("DOMContentLoaded", function() {
 
     document.getElementById('listName').innerHTML = "<b>%s</b><br><small>%s</small>".format($.listName, $.search.helpText);
 
+    var startTs = new Date();
+
     $.api = new WApublicApi(FLSCclientID);
     $.when($.api.init()).done(function() {
-        
+
+        console.log('starting query', $.search.name, startTs);
         switch($.search.entity) {
             case 'contacts':
                 $.api.apiRequest({
@@ -162,6 +165,7 @@ document.addEventListener("DOMContentLoaded", function() {
                                 break;
                         }
                         renderResults(data.Contacts, $.search.formatter, withIndex);
+                        console.log('finished query', new Date() - startTs);
                     },
                     error: function (data, textStatus, jqXhr) {
                         document.getElementById('listResults').innerHTML = html = 'failed getting search result: ' + textStatus;
@@ -179,6 +183,7 @@ document.addEventListener("DOMContentLoaded", function() {
                         todaysRegistrations('Chaperone', function(data) {
                             contacts = contacts.concat(data);
                             renderResults(contacts, formatRegistration, withIndexAlpha);
+                            console.log('finished query', new Date() - startTs);
                         });
                     });
                 });
@@ -205,6 +210,7 @@ document.addEventListener("DOMContentLoaded", function() {
                                 }
                             }
                             renderResults(contacts, formatRegistrationCheckin, withIndexAlpha);
+                            console.log('finished query', new Date() - startTs);
                         },
                         error: function (data, textStatus, jqXhr) {
                             console.log(textStatus);
@@ -236,6 +242,7 @@ document.addEventListener("DOMContentLoaded", function() {
                                     }
                                 }
                                 renderResults(contacts, formatRegistrationCheckin, withIndexAlpha);
+                                console.log('finished query', new Date() - startTs);
                             },
                             error: function (data, textStatus, jqXhr) {
                                 console.log(textStatus);
@@ -270,6 +277,8 @@ document.addEventListener("DOMContentLoaded", function() {
                                         }
                                     }
                                     renderResults(contacts, formatRegistrationCheckin, withIndexAlpha);
+
+                                    console.log('finished query', new Date() - startTs);
                                 },
                                 error: function (data, textStatus, jqXhr) {
                                     console.log(textStatus);
@@ -330,6 +339,8 @@ document.addEventListener("DOMContentLoaded", function() {
 
                                 html += '</table>';
                                 document.getElementById('listResults').innerHTML = html;
+
+                                console.log('finished query', new Date() - startTs);
                             },
                             error: function (data, textStatus, jqXhr) {
                                 console.log(textStatus);

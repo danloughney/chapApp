@@ -19,11 +19,11 @@ function contactHTML(data, fieldName, label) {
     if (contact) {
         var onClick = '';
         switch(label) {
-            case 'Mobile':
+            case 'Send Text':
                 onClick = 'FLSCsms(\'%s\');'.format(contact);
                 break;
 
-            case 'Text':
+            case 'Call Mobile':
                 onClick = 'FLSCcall(\'%s\');'.format(contact);
                 break;
 

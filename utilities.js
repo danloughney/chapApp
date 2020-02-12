@@ -4,15 +4,15 @@
 * general utilities
 */
 
-const FLSCphoto = "Photo";
-const FLSCclientID = "8jc86buyhc";
+const FLSCphoto = 'Photo';
+const FLSCclientID = '8jc86buyhc';
 const clubBaseURL = 'https://foxlaneskiclub.wildapricot.org';
 const FLSCHotline = '805-635-7669';
 
 // trip configurations
 const maxRowsPerBus = 16;
 const maxBusesPerTrip = 6;
-$.todayOverride = '2020-02-08'; // '2020-01-18'; //  undefined; // set to undefined for production '2020-03-18'; // 
+$.todayOverride = '2020-02-08'; // '2020-01-18'; //  undefined; // set to undefined for production '2020-03-18';
  
 // field value definitions
 const MembershipLevelChaperone = 1088585;
@@ -29,7 +29,7 @@ class WAObject {
 String.prototype.format = function() {
     var newStr = this, i = 0;
     while (/%s/.test(newStr))
-        newStr = newStr.replace("%s", arguments[i++])
+        newStr = newStr.replace('%s', arguments[i++])
 
     return newStr;
 }
@@ -37,12 +37,12 @@ String.prototype.format = function() {
 function setCookie(cname, cvalue, exdays) {
     var d = new Date();
     d.setTime(d.getTime() + (exdays * 24 * 60 * 60 * 1000));
-    var expires = "expires="+d.toUTCString();
-    document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
+    var expires = 'expires='+d.toUTCString();
+    document.cookie = cname + '=' + cvalue + ';' + expires + ';path=/';
 }
   
 function getCookie(cname) {
-    var name = cname + "=";
+    var name = cname + '=';
     var ca = document.cookie.split(';');
     for(var i = 0; i < ca.length; i++) {
         var c = ca[i];
@@ -53,17 +53,17 @@ function getCookie(cname) {
         return c.substring(name.length, c.length);
         }
     }
-    return "";
+    return '';
 }
 
 function checkCookie() {
-    var user = getCookie("username");
-    if (user != "") {
-        alert("Welcome again " + user);
+    var user = getCookie('username');
+    if (user != '') {
+        console.log('Welcome again ' + user);
     } else {
-        user = prompt("Please enter your name:", "");
-        if (user != "" && user != null) {
-        setCookie("username", user, 365);
+        user = prompt('Please enter your name:', '');
+        if (user != '' && user != null) {
+        setCookie('username', user, 365);
         }
     }
 }

@@ -38,7 +38,7 @@ document.addEventListener("DOMContentLoaded", function() {
                         html += '<tr><td align="center"><b>%s</b><a id=%s></a><td></tr>'.format(lastLabel, lastLabel);
                     }
     
-                    html += search.formatter(contacts[i]);
+                    html += firstAidFormatter(contacts[i]);
                 }
 
                 var indexHtml = ''; 
@@ -70,7 +70,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 var html = '<table>';        
                 for (var i = 0; i < contacts.length; i++) {
                     resultCount ++;    
-                    html += injurySearch.formatter(contacts[i]);
+                    html += firstAidFormatter(contacts[i]);
                 }
              
                 document.getElementById('injuryResults').innerHTML = html;

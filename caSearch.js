@@ -40,6 +40,7 @@ class BusReport {
         this.chaperones = 0;
         this.lessons = { };
         this.totalLessons = 0;
+        this.testedContacts = [ ];
     }
 
     addLesson(lessonName) {
@@ -56,11 +57,18 @@ class BusReport {
         this.totalLessons += 1;
     }
 
+    addTested(contact) {
+        this.testedContacts.push(contact);
+    }
+
     add(busReport) {
         this.total += busReport.total;
         this.students += busReport.students;
         this.siblings += busReport.siblings;
         this.chaperones += busReport.chaperones;
+
+        this.testedContacts = this.testedContacts.concat(busReport.testedContacts);
+        this.testedContacts = this.testedContacts.sort(sortByPassFailAlpha);
 
         for (var lessonName in busReport.lessons) {
             this.totalLessons += busReport.lessons[lessonName];
@@ -226,6 +234,22 @@ function injuryFormatter(contact) {
     );
 };
 
+function firstAidFormatter(contact) {
+    var busNumber = fieldValue(contact, TripBusNumber);
+    if (busNumber != undefined && busNumber != '') {
+        return "<tr><td><a href='%s'>%s, %s</a><br>Bus %s Seat %s<br>%s</td></tr>".format(
+            memberFirstAid(contact.Id), 
+            contact.LastName, contact.FirstName, 
+            fieldValue(contact, TripBusNumber), fieldValue(contact, TripBusSeat),
+            fieldValue(contact, TripInjuryNotes)
+        );    
+    }
+    return "<tr><td><a href='%s'>%s, %s</a></td></tr>".format(
+        memberFirstAid(contact.Id), 
+        contact.LastName, contact.FirstName, 
+    );
+};
+
 function passFail(proficiencyArray) {
     for (var i = 0; i < proficiencyArray.length; i++) {
         proficiency = proficiencyArray[i];
@@ -326,6 +350,8 @@ function sortRegistrations(a, b) {
     var y = b.DisplayName.toLowerCase();
     return x < y ? -1 : x > y ? 1 : 0;
 }
+
+var buses = []; // contains the report of each bus
 
 const searches = {
     'Registered for Today\'s Trip' : new SavedSearch('Registered for Today\'s Trip', 
@@ -496,7 +522,7 @@ const searches = {
             filterCheckedIn, 
             selectBasicFields,
             sortBySeat, 
-            detentionFormatter, // default formatter
+            detentionFormatter,
             function(contact) {
                 var detention = fieldValue(contact, TripDetentionFlag);
                 if (detention && detention.Id == detentionRequired) {
@@ -507,14 +533,15 @@ const searches = {
             function(contacts) {
                 var bus = 1;
                 var busReport = new BusReport(bus);
-                var buses = [];
                 buses.push(busReport);
-
-                // var lessonsByBus = { };
 
                 for (var i = 0; i < contacts.length; i++) {
                     var contact = contacts[i];
                     
+                    if (fieldValue(contact, TripTestDate) == ($.todayOverride || new Date().toJSON().slice(0,10))) {
+                        busReport.addTested(contact);
+                    }
+
                     if (fieldValue(contact, TripBusNumber) == bus) {
                         busReport.total ++;
 
@@ -535,33 +562,18 @@ const searches = {
                         var lessonName = fieldValue(contact, TripConfirmedLesson);
                         busReport.addLesson(lessonName);
 
-                        // if (lesson != undefined && lesson != '') {
-                        //     var lcount = lessonsByBus[lesson];
-                        //     if (lcount == undefined) {
-                        //         lcount = 1;
-                        //     } else {
-                        //         lcount += 1;
-                        //     }
-                        //     lessonsByBus[lesson] = lcount;
-                        //     busReport.totalLessons += lcount;
-                        // }        
                     } else {
-                        // busReport.lessons = lessonsByBus;
-                        // lessonsByBus = { };
                         bus ++;
                         busReport = new BusReport(bus);
                         buses.push(busReport);
                         --i; // reset i to count the person with code above
                     }
                 }
-                //busReport.lessons = lessonsByBus;
 
                 var exportCode='<button onclick="exportCSV();" class="btnRed">Export</button><div id="csvData" hidden=true>%s</div>'.format(busReportCSV(buses));
                 document.getElementById('export').innerHTML = exportCode;
                 return busReportHTML(buses);
             }),
-
-
   };
 
 function todaysRegistrations(api, callback) {
@@ -679,6 +691,15 @@ function busReportHTML(buses) {
     }
     html += '</table></fieldset>';
 
+    html += '<fieldset><legend>Testing Summary</legend><table width="100%" align="center">' +
+        '<tr align="center"><td width="10%">MemberID</td><td width="20%">Name</td><td width="20%">Pass/Fail</td></tr>';
+    
+        for (i = 0; i < totals.testedContacts.length; i++) {
+            html += '<tr align="center"><td width="10%">%s</td><td width="20%">%s</td><td width="20%">%s</td></tr>'.format(totals.testedContacts[i].Id,  FLSCformatMemberName(totals.testedContacts[i]), passFail(fieldValue(totals.testedContacts[i], ProficiencyField)));
+        }
+    html += '</table></fieldset>';
+
+
     html += '<p>&nbsp;<p><label class="labelBad">Detentions</label>';
     return html;
 }
@@ -712,6 +733,13 @@ function busReportCSV(buses) {
     }
     csv += newline;
 
+    csv += 'Testing Summary' + newline + 
+        'MemberID, Name, Pass/Fail' + newline;
+
+    for (i = 0; i < totals.testedContacts.length; i++) {
+        csv += '%s, %s, %s'.format(totals.testedContacts[i].Id, FLSCformatMemberName(totals.testedContacts[i]), passFail(fieldValue(totals.testedContacts[i], ProficiencyField)));
+        csv += newline;
+    }
     return csv;
 }
 

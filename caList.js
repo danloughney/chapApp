@@ -13,8 +13,10 @@ var formatRegistration = function(registration) {
 
 var formatRegistrationCheckin = function(registration) {
     return '<tr><td><a href="%s">%s</a><br>%s&nbsp;&nbsp;&nbsp;%s</td></tr>'.format(
-        checkInURL(pageCheckInAM, registration.Contact.Id),
-        registration.DisplayName, 
+        checkInURL(pageCheckInAM, registration.Contact.Id) + 
+            (($.busNumber != undefined) ? '&bus=' + $.busNumber : '') +
+            (($.seatID != undefined) ? '&seatID=' + $.seatID : ''),
+        registration.DisplayName,
         registration.RegistrationType.Name,
         (registration.IsPaid) ? '' : 'Not Paid'
     );
@@ -86,43 +88,48 @@ function renderResults(contacts, formatFunction, withIndex) {
     }
 }
 
-function todaysRegistrations(membershipLevel, completion) {
-    $.api.apiRequest({
-        apiUrl: $.api.apiUrls.events(),
+function todaysRegistrations(completion) {
+    var today = $.todayOverride || new Date().toJSON().slice(0,10);
+    var tmpDate = new Date();
+    // all to handle the todayOverride string
+    tmpDate.setDate(1);
+    tmpDate.setHours(0);
+    tmpDate.setMinutes(0);
+    tmpDate.setSeconds(0);
+    tmpDate.setFullYear(parseInt(today.substring(0, 4)));
+    tmpDate.setMonth(parseInt(today.substring(5, 7))-1);
+    tmpDate.setDate(parseInt(today.substring(8)));
+    var tomorrow = new Date();
+    tomorrow.setTime(tmpDate.getTime() + 24*60*60*1000);
+
+    $.api.apiRequest({        
+        apiUrl: $.api.apiUrls.events({ '$filter' : "'StartDate' ge '%s' AND 'StartDate' le '%s'".format(today, tomorrow.toJSON().slice(0,10)),
+                                       '$select' : "'StartDate','Id'" }),
         success: function (data, textStatus, jqXhr) {
             console.log('list', data);
 
-            var todaysEvents = [];
-            var today = $.todayOverride || new Date().toJSON().slice(0,10);
             var events = data.Events;
-            for (i=0; i < events.length; i++) {
-                var event = events[i];
-                if (event.EndDate.slice(0,10) == today && event.Name.includes(membershipLevel)) {
-                    console.log('found today event', event);
-                    todaysEvents.push(event);
-                    break;
-                }
-            }
-
-            if (todaysEvents.length==0) {
+            if (events.length==0) {
                 console.log('This is no %s event for today'.format(membershipLevel));
                 completion([]);
                 return;
             }
 
-            var params = {
-                eventId: todaysEvents[0].Id,
-            };
-
-            $.api.apiRequest({
-                apiUrl:$.api.apiUrls.registrations(params),
-                success: function (data, textStatus, jqXhr) {
-                    completion(data);
-                },
-                error: function (data, textStatus, jqXhr) {
-                    completion([]);
-                }
-            });
+            for (var i = 0; i < events.length; i++) {
+                var params = {
+                    eventId: events[i].Id,
+                };
+    
+                $.api.apiRequest({
+                    apiUrl:$.api.apiUrls.registrations(params),
+                    success: function (data, textStatus, jqXhr) {
+                        completion(data);
+                    },
+                    error: function (data, textStatus, jqXhr) {
+                        completion([]);
+                    }
+                });
+            }
         },
         error: function (data, textStatus, jqXhr) {
             completion([]);
@@ -132,15 +139,28 @@ function todaysRegistrations(membershipLevel, completion) {
 
 document.addEventListener("DOMContentLoaded", function() {
     $.listName = $.urlParam('name');
+    $.seatID = $.urlParam('seatID');
+    $.busNumber = $.urlParam('bus');
+
     $.search = searches[$.listName];
 
-    document.getElementById('listName').innerHTML = "<b>%s</b><br><small>%s</small>".format($.listName, $.search.helpText);
+    if ($.seatID != undefined) {
+        var helpText = 'Select member to check in on Bus %s&nbsp;&nbsp;Seat %s'.format($.busNumber, $.seatID)
+    } else {
+        var helpText = $.search.helpText;
+    }
+
+    document.getElementById('listName').innerHTML = "<b>%s</b><br><small>%s</small>".format($.listName, helpText);
 
     var startTs = new Date();
+    var pendingRequests = 0;
+
+    document.getElementById('listResults').innerHTML = 'Please wait...';
 
     $.api = new WApublicApi(FLSCclientID);
     $.when($.api.init()).done(function() {
-
+        // $count
+        
         console.log('starting query', $.search.name, startTs);
         switch($.search.entity) {
             case 'contacts':
@@ -174,53 +194,70 @@ document.addEventListener("DOMContentLoaded", function() {
                 break;
             
             case 'registrations':
-                document.getElementById('listResults').innerHTML = '';
-                var contacts = [];//should be registrations
-                todaysRegistrations('Student', function(data) {
+                pendingRequests = 3;
+                const completeRegistrations = function(data) {
+                    --pendingRequests;
                     contacts = contacts.concat(data);
-                    todaysRegistrations('Sibling', function(data) {
-                        contacts = contacts.concat(data);
-                        todaysRegistrations('Chaperone', function(data) {
-                            contacts = contacts.concat(data);
-                            renderResults(contacts, formatRegistration, withIndexAlpha);
-                            console.log('finished query', new Date() - startTs);
-                        });
-                    });
+
+                    if (pendingRequests == 0) {
+                        renderResults(contacts, formatRegistration, withIndexAlpha);
+                        console.log('finished query', new Date() - startTs);
+                    }
+                }
+                var contacts = [];//should be registrations
+                
+                todaysRegistrations(function(data) {
+                    completeRegistrations(data);
                 });
                 break;
 
             case 'registrationsNotCheckedIn':
-                document.getElementById('listResults').innerHTML = '';
-                var contacts = [];
-                todaysRegistrations('Student', function(data) {
-                contacts = contacts.concat(data);
-                    var alreadyCheckedIn = { };
-                    $.api.apiRequest({
-                        apiUrl: $.api.apiUrls.contacts({ '$filter' : filterCheckedIn }),
-                        success: function (data, textStatus, jqXhr) {
-                            var checkedInContacts = data.Contacts;
-                            for (var i = 0;i<checkedInContacts.length;i++) {
-                                alreadyCheckedIn[checkedInContacts[i].Id] = checkedInContacts[i];
-                            }
+                pendingRequests = 4;
+                var registrations = [];
+                var checkedInContacts = [];
+                var alreadyCheckedIn = { };
+                
+                const completeRegistrationsNotCheckedIn = function(data) {
+                    --pendingRequests;
 
-                            // remove any already checked in kids
-                            for (i = 0; i < contacts.length; i++) {
-                                if (alreadyCheckedIn[contacts[i].Contact.Id] != undefined) {
-                                    contacts[i] = null;
-                                }
+                    if (data != undefined) {
+                        registrations = registrations.concat(data);
+                    }
+
+                    if (pendingRequests == 0) {
+                        // remove any already checked in kids
+                        for (var j = 0; j < registrations.length; j++) {
+                            if (alreadyCheckedIn[registrations[j].Contact.Id] != undefined) {
+                                registrations[j] = null;
                             }
-                            renderResults(contacts, formatRegistrationCheckin, withIndexAlpha);
-                            console.log('finished query', new Date() - startTs);
-                        },
-                        error: function (data, textStatus, jqXhr) {
-                            console.log(textStatus);
                         }
-                    });
+                        renderResults(registrations, formatRegistrationCheckin, withIndexAlpha);
+                        console.log('finished query', new Date() - startTs);
+                    }
+                }
+
+                todaysRegistrations(function(data) {
+                    console.log('got registrations', new Date() - startTs);
+                    completeRegistrationsNotCheckedIn(data);
+                });
+                
+                $.api.apiRequest({
+                    apiUrl: $.api.apiUrls.contacts({ '$filter' : "'TripCheckInMorning' ne NULL" }),
+                    success: function (data, textStatus, jqXhr) {
+                        console.log('got checked in contacts', new Date() - startTs);
+                        checkedInContacts = data.Contacts;
+                        for (var i = 0; i< checkedInContacts.length;i++) {
+                            alreadyCheckedIn[checkedInContacts[i].Id] = checkedInContacts[i];
+                        }
+                        completeRegistrationsNotCheckedIn();
+                    },
+                    error: function (data, textStatus, jqXhr) {
+                        console.log(textStatus);
+                    }
                 });
                 break;
 
             case 'registrationsNotCheckedInChapsandSibs':
-                document.getElementById('listResults').innerHTML = '';
                 var contacts = [];
                 todaysRegistrations('Sibling', function(data) {
                     contacts = contacts.concat(data);
@@ -253,7 +290,6 @@ document.addEventListener("DOMContentLoaded", function() {
                 break;
 
             case 'registrationsNotCheckedInALL':
-                document.getElementById('listResults').innerHTML = '';
                 var contacts = [];
                 todaysRegistrations('Student', function(data) {
                     contacts = contacts.concat(data);
@@ -290,7 +326,6 @@ document.addEventListener("DOMContentLoaded", function() {
                 break;
 
             case 'changedLessons':
-                document.getElementById('listResults').innerHTML = '';
                 var registrations = [];
                 var registeredLessons = { };
 
@@ -348,8 +383,7 @@ document.addEventListener("DOMContentLoaded", function() {
                         });
                     });
                 });
-                break;
-    
+                break;    
         }
        
         return false;

@@ -274,7 +274,7 @@ function FLSCputMemberData(api, memberID, fieldValues, fSuccess, fError) {
 }
 
 
-function FLSCcheckInAM(api, memberID, busNumber, busSeat, lessonOption, notes) {
+function FLSCcheckInAM(api, memberID, busNumber, busSeat, lessonOption, notes, skipBack) {
     var fieldValues = [ 
         { fieldName:TripCheckInMorning, value: FLSCformatDate(new Date()) },
         { fieldName:TripBusNumber, value: busNumber },
@@ -292,7 +292,11 @@ function FLSCcheckInAM(api, memberID, busNumber, busSeat, lessonOption, notes) {
 
     FLSCputMemberData(api, memberID, fieldValues, 
         function(fieldValues, textStatus) {
-            FLSCwindowAlert('Check in successful. Bus ' + busNumber + ' Seat ' + busSeat, FLSCwindowBack);
+            if (skipBack != undefined) {
+                FLSCwindowAlert('Check in successful. Bus ' + busNumber + ' Seat ' + busSeat, FLSCwindowBack2);
+            } else {
+                FLSCwindowAlert('Check in successful. Bus ' + busNumber + ' Seat ' + busSeat, FLSCwindowBack);
+            }
         }, 
         function(fieldValues, textStatus) {
             FLSCwindowAlert("Failed to update contact. Try again. You may not have permission. " + textStatus);

@@ -35,7 +35,32 @@ function onChangeBusNumber() {
 
     clearAllCells();
     executeQuery(busNumber);
+    executeDetentionQuery(busNumber);
     executeMountainTestQuery(busNumber);
+}
+
+function executeDetentionQuery(busNumber) {
+    document.getElementById('detentionList').innerHTML = '';
+    
+    $.api.apiRequest({
+        apiUrl: $.api.apiUrls.contacts({ '$filter' : "'Status' eq 'Active' AND 'TripBusNumber' eq '%s' AND 'TripCheckInMorning' ne NULL".format(busNumber) }),
+        success: function (data, textStatus, jqXhr) {
+            var html = '<br><table>';
+            for (var i = 0; i < data.Contacts.length; i++) {
+                var detention = fieldValue(data.Contacts[i], 'Detention?');
+                if (detention && detention.Id == detentionRequired) {
+                    html += detentionFormatter(data.Contacts[i]);
+                }
+            }
+            if (data.Contacts.length > 0) {
+                html += '</table>';
+                document.getElementById('detentionList').innerHTML = html;
+            }
+        },
+        error: function (data, textStatus, jqXhr) {
+            console.log('failed getting detentions', textStatus);
+        }
+    });    
 }
 
 function executeQuery(busNumber) {
@@ -53,8 +78,7 @@ function executeQuery(busNumber) {
 
             contacts.sort(search.sorter || { } );
 
-            for (var i = 0; i < contacts.length; i++) {
-                
+            for (var i = 0; i < contacts.length; i++) {    
                 var contact = contacts[i];
                 resultCount ++;
                 switch(contact.MembershipLevel.Name) {
@@ -72,10 +96,49 @@ function executeQuery(busNumber) {
                 }
 
                 var elt = document.getElementById(fieldValue(contact, TripBusSeat));
-                elt.innerHTML = formatMember(contact);
-                elt.style = memberStatusBackgroundStyle(fieldValue(contact, 'Member Status'));
+                if (elt != undefined) {
+                    elt.innerHTML = formatMember(contact);
+                    elt.style = memberStatusBackgroundStyle(fieldValue(contact, 'Member Status'));
+                } else {
+                    console.log('unknown seat', fieldValue(contact, TripBusSeat));
+                }
             }
-            document.getElementById('listCount').innerHTML = '%s Seat%s in Use<br>%s Student%s<br>%s Sibling%s<br>%s Chaperone%s'.format(
+
+            var cells = document.getElementsByClassName('chartTable');
+            for (i = 0; i < cells.length; i++) {
+                var innerHtml = cells[i].innerHTML;
+                if (innerHtml == '') {
+                    var id = cells[i].id;
+                    var row = parseInt(id);
+                    var seat = id.substring(2);
+                    var seatNumber = 0;
+                    
+                    switch(seat) {
+                        case 'A':
+                            seatNumber = 4*(row-1) + 1;
+                            break;
+
+                        case 'B':
+                            seatNumber = 4*(row-1) + 2;
+                            break;
+
+                        case 'C':
+                            seatNumber = 4*(row-1) + 3;
+                            break;
+
+                        case 'D':
+                            seatNumber = 4*(row-1) + 4;
+                            break;
+                    }
+                    // console.log('id', id, row, seat, seatNumber);
+                    cells[i].innerHTML = '<a href="%s&bus=%s&seatID=%s">Seat %s</a>'.format('/caList?name=Morning Check In', busNumber, seatNumber, seatNumber);
+
+                    // fill it with a check in link
+                    // change the checkin page to calculate the seat number and seat/Row
+                }
+            }
+
+            document.getElementById('listCount').innerHTML = '<table width="100%"><tr align="center"><td>%s Seat%s in Use</td><td>%s Student%s</td><td>%s Sibling%s</td><td>%s Chaperone%s</td></tr></table>'.format(
                 resultCount, resultCount == 1 ? '' : 's',
                 students, students == 1 ? '' : 's',
                 siblings, siblings == 1 ? '' : 's',
@@ -111,7 +174,6 @@ function executeMountainTestQuery(busNumber) {
             '$filter' : "'Status' eq 'Active' and  substringof('TripTestDate', '%s') AND 'TripBusNumber' eq '%s'".format($.todayOverride || new Date().toJSON().slice(0,10), busNumber),            
             }),
         success: function (data, textStatus, jqXhr) {
-            // 
             var resultCount = 0;
             var contacts = data.Contacts;
             
@@ -166,12 +228,13 @@ document.addEventListener("DOMContentLoaded", function() {
     cell.checked = true;
 
     // create the table
-    var html = renderRow('th', '', '');
-
+    var html = '<tr><td align="center" colspan="6"><b>BACK OF BUS</b></td></tr>';
+    html += renderRow('th', '', '');
     for (var i = maxRowsPerBus; i > 0; i--) {
         var rowNumber = '%s'.format(i).padStart(2, '0');
         html += renderRow('td', rowNumber, 'chartTable');
     }
+    html += '<tr><td align="center" colspan="6"><b>FRONT OF BUS</b></td></tr>'
     document.getElementById('busChart').innerHTML = html;
 
     document.getElementById('A').innerHTML = 'A';
@@ -183,7 +246,7 @@ document.addEventListener("DOMContentLoaded", function() {
     $.api = new WApublicApi(FLSCclientID);
     $.when($.api.init()).done(function() {
         executeQuery(busNumber);
-
+        executeDetentionQuery(busNumber);
         executeMountainTestQuery(busNumber);
         return false;
     });

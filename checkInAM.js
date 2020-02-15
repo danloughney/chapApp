@@ -51,47 +51,75 @@ function openCallback(memberData) {
     });
 }
 
-document.addEventListener('DOMContentLoaded', function(){
+function seatFromID(seatID) {
+    var id = parseInt(seatID);
+    var row = Math.floor(id / 4)+1;
+    switch (id % 4) {
+        case 1:
+            return '%sA'.format(row.toString().padStart(2, '0'));
+        case 2:
+            return '%sB'.format(row.toString().padStart(2, '0'));
+        case 3:
+            return '%sC'.format(row.toString().padStart(2, '0'));
+        case 4:
+            return '%sD'.format(row.toString().padStart(2, '0'));
+        default:
+            return "INVALID SEAT ID %s".format(seatID);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
     $.checkInType = $.urlParam('type');
+    $.seatID = $.urlParam('seatID');
+    $.busNumber = $.urlParam('bus');
+
     document.getElementById('checkInLabel').innerHTML = $.checkInType + ' Check In';
     
     $.pageOpen(openCallback);
 
-    var busNumber = getCookie('busNumber') || '1';
-    if (busNumber == '') busNumber = '1';
+    if ($.seatID == null) {
+        var busNumber = getCookie('busNumber') || '1';
+        if (busNumber == '') busNumber = '1';
 
-    var cell = document.getElementById('busNumber'+busNumber);
-    cell.checked = true;
+        var cell = document.getElementById('busNumber'+busNumber);
+        cell.checked = true;
 
-    var row = getCookie('row') || '1';
-    cell = document.getElementById('row').value = row;
+        var row = getCookie('row') || '1';
+        cell = document.getElementById('row').value = row;
 
-    var seat = getCookie('seat') || 'A';
-    cell = document.getElementById('seat%s'.format(seat)).checked = true;
+        var seat = getCookie('seat') || 'A';
+        cell = document.getElementById('seat%s'.format(seat)).checked = true;
+    } else {
+        document.getElementById('seatAssignmentDiv').innerHTML = 'Bus %s&nbsp;&nbsp;&nbsp;Seat %s&nbsp;/&nbsp;%s'.format($.busNumber, $.seatID, seatFromID($.seatID));
+    }
 });
 
 function executeCheckIn() {
-    var busNumber = document.querySelector('input[name="busNumber"]:checked').value;
-    setCookie('busNumber', busNumber, 1);
+    if ($.seatID == null) {
+        var busNumber = document.querySelector('input[name="busNumber"]:checked').value;
+        setCookie('busNumber', busNumber, 1);
 
-    var row = document.getElementById("row").value;
-    row = row.padStart(2, '0');
-    setCookie('row', row, 1);
+        var row = document.getElementById("row").value;
+        row = row.padStart(2, '0');
+        setCookie('row', row, 1);
 
-    var seat = "1";
-    var seatElements = document.getElementsByName('seat');
-    for(var i = 0; i < seatElements.length; i++) { 
-        if(seatElements[i].checked) {
-            seat = seatElements[i].value;
+        var seat = "1";
+        var seatElements = document.getElementsByName('seat');
+        for(var i = 0; i < seatElements.length; i++) { 
+            if(seatElements[i].checked) {
+                seat = seatElements[i].value;
+            }
         }
+        setCookie('seat', seat, 1);
+        
+        var seatNumber = row + seat;
+        checkInAM(busNumber, seatNumber, $.lessonOption, document.getElementById("notes").value);
+    } else {
+        checkInAM($.busNumber, seatFromID($.seatID), $.lessonOption, document.getElementById("notes").value, true);
     }
-    setCookie('seat', seat, 1);
-    
-    var seatNumber = row + seat;
-    checkInAM(busNumber, seatNumber, $.lessonOption, document.getElementById("notes").value);
 }
 
-function checkInAM (busNumber, seatNumber, lessonOption, notes) {
+function checkInAM (busNumber, seatNumber, lessonOption, notes, skipBack2) {
     // check if seat is already checked in
     FLSCisSeatAlreadyTaken($.api, busNumber, seatNumber, function(data) {
         if (data.Contacts.length != 0) {
@@ -106,14 +134,15 @@ function checkInAM (busNumber, seatNumber, lessonOption, notes) {
             switch(rc) {
                 case 1:
                     if (confirm("WARNING: %s %s is ALREADY checked in for %s. Do you want to check in AGAIN?".format($.data.FirstName, $.data.LastName, $.checkInType))) {
-                        FLSCcheckInAM($.api, $.memberID, busNumber, seatNumber, lessonOption, notes); 
-                        WAcheckInTrip($.api, $.memberID, $.eventID);
+                        // WAcheckInTrip($.api, $.memberID, $.eventID);
+                        FLSCcheckInAM($.api, $.memberID, busNumber, seatNumber, lessonOption, notes, skipBack2); 
                     }
                     break;
                 case 0:
                     if (confirm("Do you want to check in %s %s in Seat %s on Bus %s?".format($.data.FirstName, $.data.LastName, seatNumber, busNumber))) {
-                        FLSCcheckInAM($.api, $.memberID, busNumber, seatNumber, lessonOption, notes);
-                        WAcheckInTrip($.api, $.memberID, $.eventID);
+                        // WAcheckInTrip($.api, $.memberID, $.eventID);
+                        FLSCcheckInAM($.api, $.memberID, busNumber, seatNumber, lessonOption, notes, skipBack2);
+                        
                     }
                     break;
                 case -1:
@@ -123,6 +152,7 @@ function checkInAM (busNumber, seatNumber, lessonOption, notes) {
         });    
     });
 }
+
 
 function changeRow(difference) {
     var row = document.getElementById('row').value;

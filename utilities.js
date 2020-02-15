@@ -266,9 +266,19 @@ function FLSCwindowAlert(text, completion) {
         console.log('ALERT:' + text);
     }
 }
-function FLSCwindowBack() {
+function FLSCwindowBack(skip) {
     if ($.testHarness == undefined) {
-        window.history.back();
+        if (skip != undefined) {
+            window.history.back(skip);
+        } else {
+            window.history.back();
+        }
+    }
+}
+
+function FLSCwindowBack2() {
+    if ($.testHarness == undefined) {
+        window.history.go(-2);
     }
 }
 

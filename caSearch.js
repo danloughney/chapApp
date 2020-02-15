@@ -15,13 +15,13 @@ class SavedSearch {
         this.formatter = formatter || function(contact) {
             var busNumber = fieldValue(contact, TripBusNumber);
             if (busNumber != undefined && busNumber != '') {
-                return "<tr><td><a href='%s'>%s, %s</a><br>Bus %s Seat %s</td></tr>".format(
+                return '<tr><td><a href="%s">%s, %s</a><br>Bus %s Seat %s</td></tr>'.format(
                     memberHome(contact.Id), 
                     contact.LastName, contact.FirstName, 
                     fieldValue(contact, TripBusNumber), fieldValue(contact, TripBusSeat)
                 );    
             }
-            return "<tr><td><a href='%s'>%s, %s</a></td></tr>".format(
+            return '<tr><td><a href="%s">%s, %s</a></td></tr>'.format(
                 memberHome(contact.Id), 
                 contact.LastName, contact.FirstName, 
             );
@@ -83,7 +83,7 @@ class BusReport {
 
 const listTodayTrip = "Registered for Today's Trip";
 const listCheckedInTodayTrip = "Checked In on Bus";
-const listMorningCheckIn = 'Morning Check In (Students)';
+const listMorningCheckIn = 'Morning Check In';
 const listMorningCheckInCandS = 'Morning Check In (Chaps and Sibs)';
 
 const listViolation = "Violations";
@@ -110,10 +110,10 @@ const listLessonChanges = 'Lesson Changes';
 const morningLists = [
     listTodayTrip,
     listMorningCheckIn,
-    listMorningCheckInCandS,
+    // listMorningCheckInCandS,
     // listCheckedInTodayTrip,
     listLunchCheckIn,
-    listMissedLunch,
+    // listMissedLunch,
 ];
 
 const lessonLists = [
@@ -218,6 +218,23 @@ function violationFormatter(contact) {
     );
 };
 
+function lessonRegistrationFormatter(contact) {
+    var busNumber = fieldValue(contact, TripBusNumber);
+    if (busNumber != undefined && busNumber != '') {
+        return "<tr><td><a href='%s'>%s, %s</a><br>Bus %s Seat %s<br>%s</td></tr>".format(
+            memberHome(contact.Id), 
+            contact.LastName, contact.FirstName, 
+            fieldValue(contact, TripBusNumber), fieldValue(contact, TripBusSeat),
+            fieldValue(contact, TripConfirmedLesson)
+        );    
+    }
+    return "<tr><td><a href='%s'>%s, %s</a><br>%s</td></tr>".format(
+        memberHome(contact.Id), 
+        contact.LastName, contact.FirstName, 
+        fieldValue(contact, TripConfirmedLesson)
+    );
+};
+
 function injuryFormatter(contact) {
     var busNumber = fieldValue(contact, TripBusNumber);
     if (busNumber != undefined && busNumber != '') {
@@ -297,10 +314,6 @@ function testingFormatter(contact) {
     return genericFormatter(contact, pageCertification);
 }
 
-function lessonRegistrationFormatter(contact) {
-    return genericFormatter(contact, pageLesson);
-}
-
 function testingResultsFormatter(contact) {
     var busNumber = fieldValue(contact, TripBusNumber);
     if (busNumber != undefined && busNumber != '') {
@@ -361,16 +374,16 @@ const searches = {
         selectBasicFields, 
         sortRegistrations),
 
-    'Morning Check In (Students)' : new SavedSearch('Morning Check In (Students)', 
+    'Morning Check In' : new SavedSearch('Morning Check In', 
         'registrationsNotCheckedIn',
-        'All students who are registered for today\'s trip, but haven\'t checked in',
+        'All students who are registered for today\'s trip, but haven\'t checked in.',
         filterCheckedIn,
         selectBasicFields,
         sortRegistrations),
 
     'Morning Check In (Chaps and Sibs)' : new SavedSearch('Morning Check In (Chaps and Sibs)', 
         'registrationsNotCheckedInChapsandSibs',
-        'All chaperones and siblings who are registered for today\'s trip, but haven\'t checked in',
+        'All chaperones and siblings who are registered for today\'s trip, but haven\'t checked in.',
         filterCheckedIn,
         selectBasicFields,
         sortRegistrations),
@@ -465,9 +478,16 @@ const searches = {
     'Lesson Changes' : new SavedSearch('Lesson Changes', 
                                         'changedLessons',
                                         'Report of added or changed lessons'),
-                                
-                                
-                                        
+
+    'Detentions'                : new SavedSearch('Detentions', 
+                                        'contacts',
+                                        'Report of members with detentions.',
+                                        "('Status' eq 'Active' AND 'TripDetentionFlag' ne NULL)",
+                                        selectBasicFields, 
+                                        sortAlphabetically, 
+                                        detentionFormatter,
+                                        ),
+
     'Violations'                : new SavedSearch('Violations', 
                                         'contacts',
                                         'Report of members with violations on today\'s trip.',
@@ -576,43 +596,43 @@ const searches = {
             }),
   };
 
-function todaysRegistrations(api, callback) {
+// function todaysRegistrations(api, callback) {
 
-    todaysEvents(api, function(events) {
-        for (var i = 0; i < events.length; i++) {
-            // count number of registrations, etc.
-        }
-    });
-}
+//     todaysEvents(api, function(events) {
+//         for (var i = 0; i < events.length; i++) {
+//             // count number of registrations, etc.
+//         }
+//     });
+// }
 
-function todaysEvents(api, callback) {
-    api.apiRequest({
-        apiUrl: api.apiUrls.events(),
-        success: function (data, textStatus, jqXhr) {
-            console.log('list', data);
+// function todaysEvents(api, callback) {
+//     api.apiRequest({
+//         apiUrl: api.apiUrls.events(),
+//         success: function (data, textStatus, jqXhr) {
+//             console.log('list', data);
 
-            var todaysEvents = [];
-            var today = $.todayOverride || new Date().toJSON().slice(0,10);
-            var events = data.Events;
-            for (i=0; i < events.length; i++) {
-                var event = events[i];
-                if (event.EndDate.slice(0,10) == today && event.Name.includes(membershipLevel)) {
-                    console.log('found today event', event);
-                    todaysEvents.push(event);
-                }
-            }
-            if (todaysEvents.length==0) {
-                alert('This is no %s event for today'.format(membershipLevel));
-                return;
-            }
+//             var todaysEvents = [];
+//             var today = $.todayOverride || new Date().toJSON().slice(0,10);
+//             var events = data.Events;
+//             for (i=0; i < events.length; i++) {
+//                 var event = events[i];
+//                 if (event.EndDate.slice(0,10) == today && event.Name.includes(membershipLevel)) {
+//                     console.log('found today event', event);
+//                     todaysEvents.push(event);
+//                 }
+//             }
+//             if (todaysEvents.length==0) {
+//                 alert('This is no %s event for today'.format(membershipLevel));
+//                 return;
+//             }
 
-            callback(todaysEvents);
-        },
-        error: function (data, textStatus, jqXhr) {
-            //document.getElementById('listResults2').innerHTML = html = 'failed getting search result: ' + textStatus;
-        }
-    });
-}
+//             callback(todaysEvents);
+//         },
+//         error: function (data, textStatus, jqXhr) {
+//             //document.getElementById('listResults2').innerHTML = html = 'failed getting search result: ' + textStatus;
+//         }
+//     });
+// }
 
 
 function allLessons(buses) {

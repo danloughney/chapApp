@@ -30,6 +30,11 @@ function contactHTML(data, fieldName, label) {
             case 'Email':
                 onClick = 'FLSCemail(\'%s\');'.format(contact);
                 break;
+
+            default:
+                window.alert('invalid call type' + label);
+                break;
+
         }
         return '<p align="center"><button class="btn" onclick="%s">%s</button></p>'.format(onClick, label);
     }

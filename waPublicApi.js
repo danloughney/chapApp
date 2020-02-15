@@ -175,15 +175,18 @@ function WApublicApi(clientId) {
             return this.account() + '/savedsearches/' + searchId;
         }
     };
-
+ 
     this._onInitSucceed = function (data, textStatus, jqXhr) {
-        if(data == null) return;
-        this.accountId = data[0].Id;
+        // if(data == null) return;
+        this.accountId = '300928'; // data[0].Id;
         this.apiUrls.accountId = this.accountId;
         this._initialized = true;
     };
 
     this.init = function () {
+        this._onInitSucceed();
+        return; 
+        
         return $.ajax({
             url: "https://foxlaneskiclub.wildapricot.org/sys/api/v2/accounts",
             type: "GET",

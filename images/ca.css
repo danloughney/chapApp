@@ -184,3 +184,8 @@ input:disabled {
   color: gray;
   background-color: darkgray;
 }
+
+* {
+  font-size: 103%;
+  font-family: Arial;
+ }

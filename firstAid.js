@@ -9,15 +9,12 @@ document.addEventListener("DOMContentLoaded", function() {
     
     $.api = new WApublicApi(FLSCclientID);
     $.when($.api.init()).done(function() {
-        $.listName = listFirstAid;
+        $.listName = 'First Aid';
         document.getElementById('listName').innerHTML = $.listName;
-        var search = searches[$.listName];
+        var search = searchByName($.listName);
 
         $.api.apiRequest({
-            apiUrl: $.api.apiUrls.contacts({ '$filter' : search.filter, 
-                                             //'$sort'   : search.sorter, 
-                                             //'$select' : search.selector }
-            }),
+            apiUrl: $.api.apiUrls.contacts({ '$filter' : search.filter }),
             success: function (data, textStatus, jqXhr) {
                 var resultCount = 0;
                 var contacts = data.Contacts;
@@ -57,7 +54,8 @@ document.addEventListener("DOMContentLoaded", function() {
         });
        
         // look for injuries
-        var injurySearch = searches[listInjury];
+        var injurySearch = searchInjuries;
+        
         $.api.apiRequest({
             apiUrl: $.api.apiUrls.contacts({ '$filter' : injurySearch.filter
             }),

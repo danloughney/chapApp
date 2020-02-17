@@ -64,7 +64,7 @@ function executeDetentionQuery(busNumber) {
 }
 
 function executeQuery(busNumber) {
-    search = searches[$.listName];
+    search = searchByName($.listName);
 
     $.api.apiRequest({
         apiUrl: $.api.apiUrls.contacts(
@@ -131,7 +131,7 @@ function executeQuery(busNumber) {
                             break;
                     }
                     // console.log('id', id, row, seat, seatNumber);
-                    cells[i].innerHTML = '<a href="%s&bus=%s&seatID=%s">Seat %s</a>'.format('/caList?name=Morning Check In', busNumber, seatNumber, seatNumber);
+                    cells[i].innerHTML = '<a href="%s&bus=%s&seatID=%s">Seat %s</a>'.format('/caList?name=Not Checked In', busNumber, seatNumber, seatNumber);
 
                     // fill it with a check in link
                     // change the checkin page to calculate the seat number and seat/Row

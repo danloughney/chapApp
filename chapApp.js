@@ -4,37 +4,60 @@
 * chapApp home page
 */
 
+function listGroup(name, listName) {
+    var html = '<fieldset><legend>%s</legend>'.format(name);
+    for (var i = 0; i < listName.length; i++) {
+        if (i != 0) html += '<br>';
+        html += '<a href="%s">%s</a>'.format(listName[i].href, listName[i].name);
+    }
+    html += '</fieldset>';
+    return html;
+}
 
 document.addEventListener("DOMContentLoaded", function() {
-
-    var html = '';
-    for (var i = 0; i < morningLists.length; i++) {
-        if (i != 0) html += '<br>';
-        html += '<a href="/caList?name=' + searches[morningLists[i]].name + '">' + searches[morningLists[i]].name + '</a>';
+    var html = '<table width="100%">';
+    if (window.innerWidth > 500) {
+        // 2 column
+        html += '<tr valign="top"><td id="section1" width="50%" ></td><td id="section4" width="50%"></td></tr>' +
+                '<tr valign="top"><td ><div id="section2"></div><div id="section3"></div></td><td id="section5"></td></tr>' +
+                '<tr valign="top"><td></td><td id="section6"></td></tr>';
+    } else {
+        html += '<tr><td id="section1" width="100%" ></td></tr>' +
+                '<tr><td id="section2" width="100%" ></td></tr>' +
+                '<tr><td id="section3" width="100%" ></td></tr>' +
+                '<tr><td id="section4" width="100%" ></td></tr>' +
+                '<tr><td id="section5" width="100%" ></td></tr>';
     }
-    document.getElementById("todaysLists").innerHTML = html;
+    html += '</table>';
+    document.getElementById("newHome").innerHTML = html;
 
-    html = '';
-    for (i = 0; i < lessonLists.length; i++) {
-        if (i != 0) html += '<br>';
-        html += '<a href="/caList?name=' + searches[lessonLists[i]].name + '">' + searches[lessonLists[i]].name + '</a>';
-    }
-    document.getElementById("lessonLists").innerHTML = html;
+    document.getElementById('section1').innerHTML = listGroup('Today\'s Trip', [
+        searchTripReport,
+        searchBusSeatingChart,
+        searchMorningCheckIn,
+    ]);
 
-    html = '';
-    for (i = 0; i < memberLists.length; i++) {
-        if (i != 0) html += '<br>';
-        html += '<a href="/caList?name=' + searches[memberLists[i]].name + '">' + searches[memberLists[i]].name + '</a>';
-    }
-    document.getElementById("membersLists").innerHTML = html;
-
-    html = '';
-    for (i = 0; i < testingList.length; i++) {
-        if (i != 0) html += '<br>';
-        html += '<a href="/caList?name=' + searches[testingList[i]].name + '">' + searches[testingList[i]].name + '</a>';
-    }
-    document.getElementById("testingLists").innerHTML = html;
-
+    document.getElementById('section2').innerHTML = listGroup('Lessons', [
+        searchLessonCheckIn, 
+        searchCheckedInForLesson
+    ]);
     
+    document.getElementById('section3').innerHTML = listGroup('Lunch', [
+            searchLunchCheckIn
+    ]);
 
+    document.getElementById('section4').innerHTML = listGroup('Testing', [
+        searchTestingRegistration,
+        searchTestingEvaluation, 
+        searchTestingResults, 
+    ]);
+
+    document.getElementById('section5').innerHTML = listGroup('Member Lists', [
+        searchTodayTrip,
+        searchInjuries,
+        searchViolations,
+        searchAllStudents, 
+        searchAllSiblings, 
+        searchAllChaperones, 
+    ]);  
 });

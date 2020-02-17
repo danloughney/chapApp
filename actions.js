@@ -154,6 +154,14 @@ $.pageOpen = function(callback) {
                     }
                 }
 
+                /*       <tr align="left" valign="top">
+                    <td>
+                    <fieldset id="currentNoteFieldset">
+                        <legend id="currentNoteLabel">Note History<br></legend> <label id="currentNote">&nbsp;</label>
+                    </fieldset>
+                    </td>
+                </tr>
+                */
                 var currentNote = document.getElementById('currentNote');
                 if (currentNote != undefined) {
                     currentNote.innerHTML = fieldValue($.data, TripChapNotes);
@@ -491,6 +499,7 @@ const anyUpdateFilter = "'Status' eq 'Active' and (" +
     "('TripViolationNotes' ne '' and 'TripViolationNotes' ne NULL) or " + 
     "('TripLastUpdateDate' ne '' and 'TripLastUpdateDate' ne NULL) or " + 
     "('TripTestDate' ne ''       and 'TripTestDate' ne NULL) )";
+    
 
 function FLSCTripStatus(api, outputField) {
     $.api.apiRequest({

@@ -146,7 +146,7 @@ function fieldValue2(data, name) {
             return (data.FieldValues[index].Value == null) ? '' : data.FieldValues[index].Value;
         }
     }
-    return undefined;
+    return '';
 }
 
 

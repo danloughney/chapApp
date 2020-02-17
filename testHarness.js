@@ -32,13 +32,17 @@ function FLSCdebugData(data) {
 }
 
 document.addEventListener("DOMContentLoaded", function() {
-    $.pageOpen();
+    $.pageOpen(function() { 
+        document.getElementById('screenWidth').innerHTML = window.innerWidth;
+        // debug details
+        if (document.getElementById("debugData") != undefined && $.urlParam("debug") != undefined) {
+            document.getElementById("debugData").innerHTML = FLSCdebugData($.data);
+        }    
+
+    });
     $.testHarness = true;
 
-    // debug details
-    if (document.getElementById("debugData") != undefined && $.urlParam("debug") != undefined) {
-        document.getElementById("debugData").innerHTML = FLSCdebugData($.data);
-    }    
+
 });
 
 function testFormatComment() {

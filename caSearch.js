@@ -4,30 +4,173 @@
 * custom saved searches
 */
 
+const withIndexNone = 0;
+const withIndexAlpha = 1;
+const withIndexLesson = 2;
+
 class SavedSearch {
-    constructor(name, entity, helpText, filter, selector, sorter, formatter, includeFn, summaryFn) {
-        this.name = name;
-        this.entity = entity;
-        this.helpText = helpText;
-        this.filter = filter;
-        this.selector = selector;
-        this.sorter = sorter;
-        this.formatter = formatter || function(contact) {
-            var busNumber = fieldValue(contact, TripBusNumber);
-            if (busNumber != undefined && busNumber != '') {
-                return '<tr><td><a href="%s">%s, %s</a><br>Bus %s Seat %s</td></tr>'.format(
-                    memberHome(contact.Id), 
-                    contact.LastName, contact.FirstName, 
-                    fieldValue(contact, TripBusNumber), fieldValue(contact, TripBusSeat)
-                );    
+    constructor(params) { 
+        const name = '$name',
+              entity = '$entity',
+              filter = '$filter',
+              help = '$help',
+              counter = '$counter',
+              selector = '$selector',
+              sorter = '$sorter',
+              index = '$index',
+              formatter = '$formatter',
+              includeFn = '$includeFn',
+              summaryFn = '$summaryFn',
+              href = '$href';
+    
+        const validParams = [
+            name, entity, help, filter, counter, selector, sorter, formatter, includeFn, summaryFn, index, href,
+        ];
+
+        this.params = params;
+        for (var key in this.params) {
+            if (!validParams.includes(key)) {
+                var list = 'invalid param: ' + key + '. Must be one of ';
+                for(var i = 0; i < validParams.length; i++) {
+                    list += validParams[i] + ', ';
+                }
+                throw list;
             }
-            return '<tr><td><a href="%s">%s, %s</a></td></tr>'.format(
+        }
+
+        if (this.params[name] == undefined || this.params[help] == undefined) {
+            throw '$name and $help are required';
+        }
+    
+        this.name      = params[name];
+        this.help      = params[help];
+        this.entity    = params[entity] || 'contacts';
+        this.filter    = params[filter];
+        this.counter   = params[counter];
+        this.selector  = params[selector] || selectBasicFields;
+        this.index     = params[index] || withIndexAlpha;
+        this.sorter    = params[sorter] || sortAlphabetically;
+        this.includeFn = params[includeFn] || function() { return true;};
+        this.summaryFn = params[summaryFn] || function() { return ''; };
+        this.formatter = params[formatter] || function(contact) {
+            var busNumber = fieldValue2(contact, TripBusNumber);
+            return '<tr><td><a href="%s">%s, %s</a>%s</tr>'.format(
                 memberHome(contact.Id), 
                 contact.LastName, contact.FirstName, 
-            );
-        };
-        this.includeFn = includeFn || function() { return true;};
-        this.summaryFn = summaryFn || function() { return ''; };
+                ((busNumber != '') ? '<br>Bus %s Seat %s</td>'.format(
+                    fieldValue(contact, TripBusNumber), fieldValue(contact, TripBusSeat)
+                    ) : ''
+                )
+            );    
+        }
+        this.href = params[href] || '/caList?name=' + this.name;
+    }
+
+    renderResultSummary(summaryElementID, contacts) {
+        var html = '';
+
+        if (contacts != undefined) {
+            html = this.summaryFn(contacts);
+        }
+        
+        if (html != '') {
+            document.getElementById(summaryElementID).innerHTML = html;
+        } else {
+            document.getElementById(summaryElementID).innerHTML = 
+                (($.resultCount != undefined) ? $.resultCount + ' result' + ($.resultCount == 1 ? '' : 's') : "Result pending") +
+                (($.count != undefined) ? ' of %s total'.format($.count) : '');
+        }
+    }
+
+    renderResults(contacts, elementID, summaryElementID) {
+        if (contacts == undefined) {
+            return;
+        }   
+        contacts.sort(this.sorter || { } );
+        document.getElementById(elementID).innerHTML = '';
+        var html = '<table width="100%"><tr><td width="80%"><table>';
+        var lastLabel = '';
+        var labelList = [];
+        $.resultCount = 0;
+     
+        for (var i = 0; i < contacts.length; i++) {
+            if (contacts[i] == null) {
+                continue;
+            }
+            if (this.includeFn(contacts[i]) == true) {
+                $.resultCount ++;
+                switch(this.index) {
+                    case withIndexNone:
+                        break;
+    
+                    case withIndexAlpha:
+                        var name = contacts[i].LastName || contacts[i].DisplayName;
+                        if (lastLabel != name.substring(0, 1).toUpperCase()) {
+                            lastLabel = name.substring(0, 1).toUpperCase();
+                            labelList.push(lastLabel);
+                            html += '<tr><td align="center"><b>%s</b><a id=%s></a><td></tr>'.format(lastLabel, lastLabel);
+                        }
+                        break;
+    
+                    case withIndexLesson:
+                        var name = fieldValue(contacts[i], TripConfirmedLesson);
+                        if (lastLabel != name.toUpperCase()) {
+                            lastLabel = name.toUpperCase();
+                            labelList.push(lastLabel);
+                            html += '<tr><td align="center"><b><br>%s</b><a id=%s></a><td></tr>'.format(lastLabel, lastLabel);
+                        }
+                        break;
+                }
+                html += this.formatter(contacts[i]);
+            }
+       }
+    
+       if (this.index != withIndexNone) {
+            var indexHtml = ''; 
+            for (var i = 0;i<labelList.length; i++) {
+                indexHtml += '<a href="#%s">%s</a><br>'.format(labelList[i], labelList[i]);
+            }
+            html += '</table><td valign="top" align="center">%s</td></tr></table>'.format(indexHtml);
+        }
+    
+        html = document.getElementById(elementID).innerHTML + html;
+        document.getElementById(elementID).innerHTML = html;
+
+        this.renderResultSummary(summaryElementID, contacts);
+    }
+
+    executeAndRender(elementID, summaryElementID) {
+        var _this = this;
+        var startTs = new Date();
+
+        if (this.counter) {    
+            $.api.apiRequest({
+                apiUrl: $.api.apiUrls.contacts({ '$filter' : this.counter, '$count' : true }),
+                success: function (data, textStatus, jqXhr) {
+                    $.count = data.Count;
+                    _this.renderResultSummary(summaryElementID);
+                    console.log('finished counter query ' + this.name, new Date() - startTs);
+                },
+                error: function (data, textStatus, jqXhr) {
+                    document.getElementById(elementID).innerHTML = html = 'failed getting search result: ' + textStatus;
+                }
+            });    
+        }
+        var startTs = new Date();
+        $.api.apiRequest({
+            apiUrl: $.api.apiUrls.contacts({ '$filter' : this.filter }),
+            success: function (data, textStatus, jqXhr) {
+                _this.renderResults(data.Contacts, elementID, summaryElementID);
+                console.log('finished query ' + this.name, new Date() - startTs);
+            },
+            error: function (data, textStatus, jqXhr) {
+                document.getElementById(elementID).innerHTML = html = 'failed getting search result: ' + textStatus;
+            }
+        });
+    }
+
+    execute() {
+
     }
 }
 
@@ -81,58 +224,6 @@ class BusReport {
     }
 }
 
-const listTodayTrip = "Registered for Today's Trip";
-const listCheckedInTodayTrip = "Checked In on Bus";
-const listMorningCheckIn = 'Morning Check In';
-const listMorningCheckInCandS = 'Morning Check In (Chaps and Sibs)';
-
-const listViolation = "Violations";
-
-const listLunchCheckIn = 'Lunch Check In';
-const listMissedLunch = 'Missed Lunch Check In';
-
-const listInTesting = "Testing Evaluation";
-const listTestResults = 'Testing Result Report';
-const listTestingRegistration = 'Testing Registration';
-
-const listFirstAid = 'First Aid';
-const listInjury = 'Injuries';
-const listBusReport = 'Trip Report';
-
-const listAllActiveMembers = 'All Students';
-const listAllActiveSiblings = 'All Siblings';
-const listAllChaperones = 'All Chaperones';
-
-const listLessonCheckIn = "Lesson Check In"; //xx have a lesson, but have not checked in. goes to lesson check-in
-const listInLessons = 'Checked In for Lesson'; // this isn't very useful
-const listLessonChanges = 'Lesson Changes';
-
-const morningLists = [
-    listTodayTrip,
-    listMorningCheckIn,
-    // listMorningCheckInCandS,
-    // listCheckedInTodayTrip,
-    listLunchCheckIn,
-    // listMissedLunch,
-];
-
-const lessonLists = [
-    listLessonCheckIn,
-    listInLessons,
-];
-
-const testingList = [
-    listTestingRegistration,
-    listInTesting,
-    listTestResults,
-];
-
-const memberLists = [
-    listAllActiveMembers,
-    listAllActiveSiblings,
-    listAllChaperones,
-];
-
 const filterCheckedIn = "('Status' eq 'Active' AND 'TripCheckInMorning' ne NULL AND 'TripCheckInMorning' ne '')";
 const filterStatusActive = "('Status' eq 'Active')";
 const selectBasicFields = "'Last Name','First Name','Id";
@@ -147,7 +238,6 @@ const sortAlphabetically = function(a, b) {
     if (a == undefined && b == undefined) {
         return 0;
     }
-
     var x = '%s|%s'.format(a.LastName, a.FirstName).toLowerCase();
     var y = '%s|%s'.format(b.LastName, b.FirstName).toLowerCase();
     return x < y ? -1 : x > y ? 1 : 0;
@@ -163,7 +253,6 @@ const sortLessonsAlphabetically = function(a, b) {
     if (a == undefined && b == undefined) {
         return 0;
     }
-
     var x = '%s|%s|%s'.format(fieldValue(a, TripConfirmedLesson), a.LastName, a.FirstName).toLowerCase();
     var y = '%s|%s|%s'.format(fieldValue(b, TripConfirmedLesson), b.LastName, b.FirstName).toLowerCase();
     return x < y ? -1 : x > y ? 1 : 0;
@@ -366,274 +455,242 @@ function sortRegistrations(a, b) {
 
 var buses = []; // contains the report of each bus
 
-const searches = {
-    'Registered for Today\'s Trip' : new SavedSearch('Registered for Today\'s Trip', 
-        'registrations',
-        'All students, siblings, and chaperones who are registered for today\'s trip.',
-        filterCheckedIn, 
-        selectBasicFields, 
-        sortRegistrations),
+const searchBusSeatingChart = new SavedSearch({
+    '$name' : 'Bus Seating Chart', 
+    '$help' : 'The bus seating chart for Chaps',
+    '$href' : '/caSeatingChart'
+});
 
-    'Morning Check In' : new SavedSearch('Morning Check In', 
-        'registrationsNotCheckedIn',
-        'All students who are registered for today\'s trip, but haven\'t checked in.',
-        filterCheckedIn,
-        selectBasicFields,
-        sortRegistrations),
+const searchTodayTrip = new SavedSearch({
+    '$name' : 'Registered for Today\'s Trip', 
+    '$entity' : 'registrations',
+    '$help' : 'All students, siblings, and chaperones who are registered for today\'s trip.',
+    '$filter' : filterCheckedIn, 
+    '$sorter' : sortRegistrations
+});
 
-    'Morning Check In (Chaps and Sibs)' : new SavedSearch('Morning Check In (Chaps and Sibs)', 
-        'registrationsNotCheckedInChapsandSibs',
-        'All chaperones and siblings who are registered for today\'s trip, but haven\'t checked in.',
-        filterCheckedIn,
-        selectBasicFields,
-        sortRegistrations),
+const searchMorningCheckIn = new SavedSearch({
+    '$name' : 'Not Checked In', 
+    '$entity' : 'registrationsNotCheckedIn',
+    '$help' : 'All students who are registered for today\'s trip, but haven\'t checked in.',
+    '$filter' : filterCheckedIn,
+    '$sorter' : sortRegistrations 
+});
 
-    'Checked In on Bus' : new SavedSearch('Checked In on Bus', 
-                                        'contacts',
-                                        'Everyone who has checked in on the morning bus.',
-                                        filterCheckedIn, // change this
-                                        selectBasicFields, 
-                                        sortAlphabetically),
+const searchCheckedInOnBus = new SavedSearch({
+    '$name' : 'Checked In on Bus', 
+    '$help' : 'Everyone who has checked in on the morning bus.',
+    '$filter' : filterCheckedIn, // change this
+});
 
-    'First Aid'     : new SavedSearch('First Aid', 
-                                        'contacts',
-                                        'Who is on the trip for the First Aid team.',
-                                        // filterCheckedIn,
-                                        filterStatusActive, 
-                                        selectBasicFields,
-                                        sortAlphabetically),
+const searchFirstAid = new SavedSearch({
+    '$name' : 'First Aid', 
+    '$help' : 'Who is on the trip for the First Aid team.',
+    '$filter' : filterStatusActive,
+});
 
-    'Injuries'      : new SavedSearch('Injuries', 
-                                        'contacts',
-                                        'Report of people with injuries.',
-                                        "('Status' eq 'Active' and 'First Aid Notes' ne NULL)", 
-                                        selectBasicFields,
-                                        sortAlphabetically,
-                                        injuryFormatter),
+const searchInjuries = new SavedSearch({
+    '$name' : 'Injuries', 
+    '$help' : 'Report of people with injuries.',
+    '$filter' : "('Status' eq 'Active' and 'First Aid Notes' ne NULL)", 
+    '$formatter' : injuryFormatter
+});
 
-    'Testing Registration'      : new SavedSearch('Testing Registration',
-                                        'contacts',
-                                        'Restricted students on today\'s trip. Use this page to check students in for mountain testing.', 
-                                        "'Status' eq 'Active' AND 'TripCheckInMorning' ne NULL AND " + 
-                                            "('TripCheckInTesting' eq NULL OR 'TripCheckInTesting' eq '') AND " +
-                                            "('Member Status' eq '12483746' OR 'Member Status' eq '12483747' OR 'Member Status' eq '12483748' OR 'Member Status' eq '12483749' OR 'Member Status' eq '12483750')",
-                                        selectBasicFields, 
-                                        sortAlphabetically, 
-                                        testingRegistrationFormatter),
-        
-    'Testing Evaluation'    : new SavedSearch('Testing Evaluation', 
-                                        'contacts',
-                                        'Students checked in for testing, but who haven\'t tested yet.',
-                                        "('Status' eq 'Active' AND 'TripCheckInTesting' ne NULL AND 'TripTestDate' eq NULL)", 
-                                        selectBasicFields, 
-                                        sortByTestingCheckin, 
-                                        testingFormatter),
+const searchTestingRegistration = new SavedSearch({
+    '$name' : 'Testing Registration',
+    '$help' : 'Restricted students on today\'s trip. Use this page to check students in for mountain testing.', 
+    '$filter' : "'Status' eq 'Active' AND 'TripCheckInMorning' ne NULL AND " + 
+            "('TripCheckInTesting' eq NULL OR 'TripCheckInTesting' eq '') AND " +
+            "('Member Status' eq '12483746' OR 'Member Status' eq '12483747' OR 'Member Status' eq '12483748' OR 'Member Status' eq '12483749' OR 'Member Status' eq '12483750')",
+    '$formatter' : testingRegistrationFormatter
+});
 
-    'Testing Result Report'           : new SavedSearch('Testing Result Report',
-                                        'contacts', 
-                                        'Students that have taken the mountain test.',
-                                        "'Status' eq 'Active' and  substringof('TripTestDate', '%s')".format($.todayOverride || new Date().toJSON().slice(0,10)),
-                                        selectBasicFields, 
-                                        sortByPassFailAlpha,
-                                        testingResultsFormatter,
-                                        function() { 
-                                            return true; // show all records
-                                        },
-                                        function(contacts) {
-                                            var html = '<table width="100%" align="left" valign="top">';
+const searchTestingEvaluation = new SavedSearch({
+    '$name' : 'Testing Evaluation', 
+    '$help' : 'Students checked in for testing, but who haven\'t tested yet.',
+    '$filter' : "('Status' eq 'Active' AND 'TripCheckInTesting' ne NULL AND 'TripTestDate' eq NULL)", 
+    '$sorter' : sortByTestingCheckin, 
+    '$formatter' : testingFormatter,
+    '$index' : withIndexNone
+});
 
-                                            var passed = 0, failed = 0, all = 0;
+const searchTestingResults = new SavedSearch({
+    '$name' : 'Testing Result Report',
+    '$help' : 'Students that have taken the mountain test.',
+    '$filter' : "'Status' eq 'Active' and  substringof('TripTestDate', '%s')".format($.todayOverride || new Date().toJSON().slice(0,10)),
+    '$sorter' : sortByPassFailAlpha,
+    '$formatter' : testingResultsFormatter,
+    '$summaryFn' : function(contacts) {
+        var html = '<table width="100%" align="left" valign="top">';
+        var passed = 0, failed = 0, all = 0;
+        for (var i = 0; i < contacts.length; i++) {
+            var contact = contacts[i];
+            all += 1;
+            if (passFailLex(fieldValue(contact, ProficiencyField)) == 0) {
+                passed += 1;
+            } else {
+                failed += 1;
+            }
+        }             
+        html += '<tr align="center"><td width="20%">Total</td><td width="20%">Passed</td><td width="20%">Failed</td><td width="20%">Passing %</td></tr>';
+        var rate = ((passed / all)*100).toFixed(1);
+        html += '<tr align="center"><td width="20%">%s</td><td width="20%">%s</td><td width="20%">%s</td><td width="20%">%s%</td></tr>'.format(all, passed, failed, rate);
+        html += "</table>";
+        return html;
+    }
+});
 
-                                            for (var i = 0; i < contacts.length; i++) {
-                                                var contact = contacts[i];
-                                                all += 1;
-                                                if (passFailLex(fieldValue(contact, ProficiencyField)) == 0) {
-                                                    passed += 1;
-                                                } else {
-                                                    failed += 1;
-                                                }
-                                            }
-                                                    
-                                            html += '<tr align="center"><td width="20%">Total</td><td width="20%">Passed</td><td width="20%">Failed</td><td width="20%">Passing %</td></tr>';
-                                            html += '<tr align="center"><td width="20%">%s</td><td width="20%">%s</td><td width="20%">%s</td><td width="20%">%s%</td></tr>'.format(all, passed, failed, (passed / all)*100);
-                                            html += "</table>";
-                                            return html;
-                                        }),
+const searchLessonCheckIn = new SavedSearch({
+    '$name' : 'Lesson Check In',
+    '$help' : 'Students who have registered for lesson, but who have not yet checked in',
+    '$filter' : "'Status' eq 'Active' AND 'TripConfirmedLesson' ne NULL AND 'TripCheckInLesson' eq NULL",
+    '$formatter' : lessonRegistrationFormatter
+});
 
-    'Lesson Check In'           : new SavedSearch('Lesson Check In',
-                                        'contacts',
-                                        'Students who have registered for lesson, but who have not yet checked in',
-                                        "'Status' eq 'Active' AND 'TripConfirmedLesson' ne NULL AND 'TripCheckInLesson' eq NULL",
-                                        selectBasicFields, 
-                                        sortAlphabetically,
-                                        lessonRegistrationFormatter),
+const searchCheckedInForLesson = new SavedSearch({ 
+    '$name' : 'Checked In for Lesson', 
+    '$help' : 'Students that have checked in for their lesson.',
+    '$filter' : "('Status' eq 'Active' AND 'TripCheckInLesson' ne NULL)", 
+    '$sorter' : sortLessonsAlphabetically,
+    '$index' : withIndexLesson
+});
 
-    'Checked In for Lesson'     : new SavedSearch('Checked In for Lesson', 
-                                        'contacts',
-                                        'Students that have checked in for their lesson.',
-                                        "('Status' eq 'Active' AND 'TripCheckInLesson' ne NULL)", 
-                                        selectBasicFields, 
-                                        sortLessonsAlphabetically),
+const searchLessonChanges = new SavedSearch({
+    '$name' : 'Lesson Changes', 
+    '$help' : 'Report of added or changed lessons',
+    '$entity' : 'changedLessons',
+    '$filter' : "'TripConfirmedLesson' ne NULL AND 'TripConfirmedLesson' ne ''",
+});
+    
+const searchDetentions = new SavedSearch({
+    '$name' : 'Detentions', 
+    '$help' : 'Report of members with detentions.',
+    '$filter' : "('Status' eq 'Active' AND 'TripDetentionFlag' ne NULL)",
+    '$formatter' : detentionFormatter,
+});
 
-    'Lesson Changes' : new SavedSearch('Lesson Changes', 
-                                        'changedLessons',
-                                        'Report of added or changed lessons'),
+const searchViolations = new SavedSearch({ 
+    '$name' : 'Violations', 
+    '$help' : 'Report of members with violations on today\'s trip.',
+    '$filter' : "('Status' eq 'Active' AND 'TripViolationDate' ne NULL)",
+    '$formatter' : violationFormatter,
+});
 
-    'Detentions'                : new SavedSearch('Detentions', 
-                                        'contacts',
-                                        'Report of members with detentions.',
-                                        "('Status' eq 'Active' AND 'TripDetentionFlag' ne NULL)",
-                                        selectBasicFields, 
-                                        sortAlphabetically, 
-                                        detentionFormatter,
-                                        ),
+const searchLunchCheckIn = new SavedSearch({
+    '$name' : 'Lunch Check In', 
+    '$help' : 'Students and Siblings who have not checked in for lunch.',
+    '$filter' : "('Status' eq 'Active' AND 'TripCheckInMorning' ne NULL and 'TripCheckInLunch' eq NULL AND 'MembershipLevelId' ne %s)".format(MembershipLevelChaperone),
+    '$counter' : "('Status' eq 'Active' AND 'TripCheckInMorning' ne NULL AND 'MembershipLevelId' ne %s)".format(MembershipLevelChaperone),
+    '$formatter' : lunchRegistrationFormatter
+});
 
-    'Violations'                : new SavedSearch('Violations', 
-                                        'contacts',
-                                        'Report of members with violations on today\'s trip.',
-                                        "('Status' eq 'Active' AND 'TripViolationDate' ne NULL)",
-                                        selectBasicFields, 
-                                        sortAlphabetically, 
-                                        violationFormatter,
-                                        ),
+const searchAllStudents = new SavedSearch({
+    '$name' : 'All Students', 
+    '$help' : 'All active FLSC student members',
+    '$filter' : "('Status' eq 'Active') AND 'MembershipLevelId' eq " + MembershipLevelStudent,
+});
 
-    'Missed Lunch Check In'     : new SavedSearch('Missed Lunch Check In', 
-                                        'contacts',
-                                        'Students and Siblings who have not checked in for lunch.',
-                                        "('Status' eq 'Active' AND 'TripCheckInMorning' ne NULL and 'TripCheckInLunch' eq NULL AND 'MembershipLevelId' ne %s)".format(MembershipLevelChaperone),
-                                        selectBasicFields, 
-                                        sortAlphabetically, 
-                                        undefined), // default formatter
+const searchAllSiblings = new SavedSearch({
+    '$name' : 'All Siblings',
+    '$help' : 'All active FLSC sibling members',
+    '$filter' : "('Status' eq 'Active') AND 'MembershipLevelId' eq " +  MembershipLevelSibling,
+});
 
-    'Lunch Check In'     : new SavedSearch('Lunch Check In', 
-                                        'contacts',
-                                        'Students and Siblings who have not checked in for lunch.',
-                                        "('Status' eq 'Active' AND 'TripCheckInMorning' ne NULL and 'TripCheckInLunch' eq NULL AND 'MembershipLevelId' ne %s)".format(MembershipLevelChaperone),
-                                        selectBasicFields, 
-                                        sortAlphabetically, 
-                                        lunchRegistrationFormatter),
+const searchAllChaperones = new SavedSearch({
+    '$name' : 'All Chaperones', 
+    '$help' : 'All active FLSC chaperones',
+    '$filter' : "('Status' eq 'Active') AND 'MembershipLevelId' eq " + MembershipLevelChaperone,
+});
 
+const searchTripReport = new SavedSearch({
+    '$name' : 'Trip Report',
+    '$help' : 'Summary of students, siblings, chaperones, with lessons, by bus. Lists all students with detention. Export data and send to the mountain.',
+    '$filter' : filterCheckedIn, 
+    '$sorter' : sortBySeat, 
+    '$formatter' : detentionFormatter,
+    '$includeFn' : function(contact) {
+        var detention = fieldValue(contact, TripDetentionFlag);
+        if (detention && detention.Id == detentionRequired) {
+            return true;
+        }
+        return false;
+    },
+    '$summaryFn' : function(contacts) {
+        var bus = 1;
+        var busReport = new BusReport(bus);
+        buses.push(busReport);
 
-    // return 1 to include the record, 0 to exclude it
-    'All Students' : new SavedSearch('All Students', 
-                                        'contacts',
-                                        'All active FLSC student members',
-                                        "('Status' eq 'Active') AND 'MembershipLevelId' eq " + MembershipLevelStudent,
-                                        selectBasicFields, 
-                                        sortAlphabetically),
+        for (var i = 0; i < contacts.length; i++) {
+            var contact = contacts[i];
+            
+            if (fieldValue(contact, TripTestDate) == ($.todayOverride || new Date().toJSON().slice(0,10))) {
+                busReport.addTested(contact);
+            }
 
-    'All Siblings' : new SavedSearch('All Siblings',
-                                        'contacts',
-                                        'All active FLSC sibling members',
-                                        "('Status' eq 'Active') AND 'MembershipLevelId' eq " +  MembershipLevelSibling,
-                                        selectBasicFields, 
-                                        sortAlphabetically),
+            if (fieldValue(contact, TripBusNumber) == bus) {
+                busReport.total ++;
 
-    'All Chaperones' : new SavedSearch('All Chaperones', 
-            'contacts',
-            'all active FLSC chaperones',
-            "('Status' eq 'Active') AND 'MembershipLevelId' eq " + MembershipLevelChaperone,
-            selectBasicFields, 
-            sortAlphabetically),
-
-    'Trip Report'    : new SavedSearch('Trip Report',
-            'contacts',
-            'Summary of students, siblings, chaperones, with lessons, by bus. Lists all students with detention. Export data and send to the mountain.',
-            filterCheckedIn, 
-            selectBasicFields,
-            sortBySeat, 
-            detentionFormatter,
-            function(contact) {
-                var detention = fieldValue(contact, TripDetentionFlag);
-                if (detention && detention.Id == detentionRequired) {
-                    return true;
+                switch(contact.MembershipLevel.Name) {
+                    case 'Student':
+                        busReport.students ++;
+                        break;
+                    case 'Chaperone':
+                        busReport.chaperones ++;
+                        break;
+                    case 'Sibling':
+                        busReport.siblings ++;
+                        break;
+                    default:
+                        console.log('incorrect membership level', contact.MembershipLevel.Name);
                 }
-                return false;
-            },
-            function(contacts) {
-                var bus = 1;
-                var busReport = new BusReport(bus);
+
+                var lessonName = fieldValue(contact, TripConfirmedLesson);
+                busReport.addLesson(lessonName);
+
+            } else {
+                bus ++;
+                busReport = new BusReport(bus);
                 buses.push(busReport);
+                --i; // reset i to count the person with code above
+            }
+        }
 
-                for (var i = 0; i < contacts.length; i++) {
-                    var contact = contacts[i];
-                    
-                    if (fieldValue(contact, TripTestDate) == ($.todayOverride || new Date().toJSON().slice(0,10))) {
-                        busReport.addTested(contact);
-                    }
+        var exportCode='<button onclick="exportCSV();" class="btnRed">Export</button><div id="csvData" hidden=true>%s</div>'.format(busReportCSV(buses));
+        document.getElementById('export').innerHTML = exportCode;
+        return busReportHTML(buses);
+    }
+});
 
-                    if (fieldValue(contact, TripBusNumber) == bus) {
-                        busReport.total ++;
+const searches = [
+    searchTodayTrip,
+    searchMorningCheckIn,
+    searchCheckedInOnBus,
+    searchFirstAid,
+    searchInjuries,
+    searchTestingRegistration,
+    searchTestingEvaluation,
+    searchTestingResults,
+    searchLessonCheckIn,
+    searchCheckedInForLesson,
+    searchLessonChanges,
+    searchDetentions,
+    searchViolations,
+    searchLunchCheckIn,
+    searchAllStudents,
+    searchAllSiblings,
+    searchAllChaperones,
+    searchTripReport,
+];
 
-                        switch(contact.MembershipLevel.Name) {
-                            case 'Student':
-                                busReport.students ++;
-                                break;
-                            case 'Chaperone':
-                                busReport.chaperones ++;
-                                break;
-                            case 'Sibling':
-                                busReport.siblings ++;
-                                break;
-                            default:
-                                console.log('incorrect membership level', contact.MembershipLevel.Name);
-                        }
-
-                        var lessonName = fieldValue(contact, TripConfirmedLesson);
-                        busReport.addLesson(lessonName);
-
-                    } else {
-                        bus ++;
-                        busReport = new BusReport(bus);
-                        buses.push(busReport);
-                        --i; // reset i to count the person with code above
-                    }
-                }
-
-                var exportCode='<button onclick="exportCSV();" class="btnRed">Export</button><div id="csvData" hidden=true>%s</div>'.format(busReportCSV(buses));
-                document.getElementById('export').innerHTML = exportCode;
-                return busReportHTML(buses);
-            }),
-  };
-
-// function todaysRegistrations(api, callback) {
-
-//     todaysEvents(api, function(events) {
-//         for (var i = 0; i < events.length; i++) {
-//             // count number of registrations, etc.
-//         }
-//     });
-// }
-
-// function todaysEvents(api, callback) {
-//     api.apiRequest({
-//         apiUrl: api.apiUrls.events(),
-//         success: function (data, textStatus, jqXhr) {
-//             console.log('list', data);
-
-//             var todaysEvents = [];
-//             var today = $.todayOverride || new Date().toJSON().slice(0,10);
-//             var events = data.Events;
-//             for (i=0; i < events.length; i++) {
-//                 var event = events[i];
-//                 if (event.EndDate.slice(0,10) == today && event.Name.includes(membershipLevel)) {
-//                     console.log('found today event', event);
-//                     todaysEvents.push(event);
-//                 }
-//             }
-//             if (todaysEvents.length==0) {
-//                 alert('This is no %s event for today'.format(membershipLevel));
-//                 return;
-//             }
-
-//             callback(todaysEvents);
-//         },
-//         error: function (data, textStatus, jqXhr) {
-//             //document.getElementById('listResults2').innerHTML = html = 'failed getting search result: ' + textStatus;
-//         }
-//     });
-// }
-
+function searchByName(name) {
+    for (var i = 0; i < searches.length; i++) {
+        if (searches[i].name == name) {
+            return searches[i];
+        }
+    }
+    var msg = 'unknown search ' + name;
+    throw msg;
+}
 
 function allLessons(buses) {
     // get unique list of lesson names in use on this trip.

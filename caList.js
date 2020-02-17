@@ -22,9 +22,6 @@ var formatRegistrationCheckin = function(registration) {
     );
 }
 
-const withIndexNo = 0;
-const withIndexAlpha = 1;
-const withIndexLesson = 2;
 
 function renderResults(contacts, formatFunction, withIndex) {
     if (contacts == undefined) {
@@ -44,7 +41,7 @@ function renderResults(contacts, formatFunction, withIndex) {
         if ($.search.includeFn(contacts[i]) == true) {
             resultCount ++;
             switch(withIndex) {
-                case withIndexNo:
+                case withIndexNone:
                     break;
 
                 case withIndexAlpha:
@@ -69,7 +66,7 @@ function renderResults(contacts, formatFunction, withIndex) {
         }
    }
 
-   if (withIndex != withIndexNo) {
+   if (withIndex != withIndexNone) {
         var indexHtml = ''; 
         for (var i = 0;i<labelList.length; i++) {
             indexHtml += '<a href="#%s">%s</a><br>'.format(labelList[i], labelList[i]);
@@ -142,12 +139,12 @@ document.addEventListener("DOMContentLoaded", function() {
     $.seatID = $.urlParam('seatID');
     $.busNumber = $.urlParam('bus');
 
-    $.search = searches[$.listName];
+    $.search = searchByName($.listName);
 
     if ($.seatID != undefined) {
         var helpText = 'Select member to check in on Bus %s&nbsp;&nbsp;Seat %s'.format($.busNumber, $.seatID)
     } else {
-        var helpText = $.search.helpText;
+        var helpText = $.search.help;
     }
 
     document.getElementById('listName').innerHTML = "<b>%s</b><br><small>%s</small>".format($.listName, helpText);
@@ -159,38 +156,11 @@ document.addEventListener("DOMContentLoaded", function() {
 
     $.api = new WApublicApi(FLSCclientID);
     $.when($.api.init()).done(function() {
-        // $count
-        
+
         console.log('starting query', $.search.name, startTs);
         switch($.search.entity) {
             case 'contacts':
-                $.api.apiRequest({
-                    apiUrl: $.api.apiUrls.contacts({ '$filter' : $.search.filter }),
-                                                     // '$sort'   : search.sorter }), 
-                                                     // '$select' : search.selector }),
-                    success: function (data, textStatus, jqXhr) {
-                        document.getElementById('listResults').innerHTML = '';
-                        var withIndex;
-                        switch($.search.name) {
-                            case listInTesting:
-                                withIndex = withIndexNo;
-                                break;
-
-                            case listInLessons:
-                                withIndex = withIndexLesson;
-                                break;
-
-                            default:
-                                withIndex = withIndexAlpha;
-                                break;
-                        }
-                        renderResults(data.Contacts, $.search.formatter, withIndex);
-                        console.log('finished query', new Date() - startTs);
-                    },
-                    error: function (data, textStatus, jqXhr) {
-                        document.getElementById('listResults').innerHTML = html = 'failed getting search result: ' + textStatus;
-                    }
-                });
+                $.search.executeAndRender('listResults', 'listCount');
                 break;
             
             case 'registrations':
@@ -200,6 +170,7 @@ document.addEventListener("DOMContentLoaded", function() {
                     contacts = contacts.concat(data);
 
                     if (pendingRequests == 0) {
+                        document.getElementById('listResults').innerHTML = '';
                         renderResults(contacts, formatRegistration, withIndexAlpha);
                         console.log('finished query', new Date() - startTs);
                     }
@@ -225,6 +196,8 @@ document.addEventListener("DOMContentLoaded", function() {
                     }
 
                     if (pendingRequests == 0) {
+                        document.getElementById('listResults').innerHTML = '';
+
                         // remove any already checked in kids
                         for (var j = 0; j < registrations.length; j++) {
                             if (alreadyCheckedIn[registrations[j].Contact.Id] != undefined) {
@@ -257,81 +230,13 @@ document.addEventListener("DOMContentLoaded", function() {
                 });
                 break;
 
-            case 'registrationsNotCheckedInChapsandSibs':
-                var contacts = [];
-                todaysRegistrations('Sibling', function(data) {
-                    contacts = contacts.concat(data);
-                    todaysRegistrations('Chaperone', function(data) {
-                        contacts = contacts.concat(data);
-                        var alreadyCheckedIn = { };
-                        $.api.apiRequest({
-                            apiUrl: $.api.apiUrls.contacts({ '$filter' : filterCheckedIn }),
-                            success: function (data, textStatus, jqXhr) {
-                                var checkedInContacts = data.Contacts;
-                                for (var i = 0;i<checkedInContacts.length;i++) {
-                                    alreadyCheckedIn[checkedInContacts[i].Id] = checkedInContacts[i];
-                                }
-
-                                // remove any already checked in kids
-                                for (i = 0; i < contacts.length; i++) {
-                                    if (alreadyCheckedIn[contacts[i].Contact.Id] != undefined) {
-                                        contacts[i] = null;
-                                    }
-                                }
-                                renderResults(contacts, formatRegistrationCheckin, withIndexAlpha);
-                                console.log('finished query', new Date() - startTs);
-                            },
-                            error: function (data, textStatus, jqXhr) {
-                                console.log(textStatus);
-                            }
-                        });
-                    });
-                });
-                break;
-
-            case 'registrationsNotCheckedInALL':
-                var contacts = [];
-                todaysRegistrations('Student', function(data) {
-                    contacts = contacts.concat(data);
-                    todaysRegistrations('Sibling', function(data) {
-                        contacts = contacts.concat(data);
-                        todaysRegistrations('Chaperone', function(data) {
-                            contacts = contacts.concat(data);
-                            var alreadyCheckedIn = { };
-                            $.api.apiRequest({
-                                apiUrl: $.api.apiUrls.contacts({ '$filter' : filterCheckedIn }),
-                                success: function (data, textStatus, jqXhr) {
-                                    var checkedInContacts = data.Contacts;
-                                    for (var i = 0;i<checkedInContacts.length;i++) {
-                                        alreadyCheckedIn[checkedInContacts[i].Id] = checkedInContacts[i];
-                                    }
-
-                                    // remove any already checked in kids
-                                    for (i = 0; i < contacts.length; i++) {
-                                        if (alreadyCheckedIn[contacts[i].Contact.Id] != undefined) {
-                                            contacts[i] = null;
-                                        }
-                                    }
-                                    renderResults(contacts, formatRegistrationCheckin, withIndexAlpha);
-
-                                    console.log('finished query', new Date() - startTs);
-                                },
-                                error: function (data, textStatus, jqXhr) {
-                                    console.log(textStatus);
-                                }
-                            });
-                        });
-                    });
-                });
-                break;
-
             case 'changedLessons':
                 var registrations = [];
                 var registeredLessons = { };
 
-                todaysRegistrations('Student', function(data) {
+                todaysRegistrations(function(data) {
                     registrations = registrations.concat(data);
-                    todaysRegistrations('Sibling', function(data) {
+                    todaysRegistrations(function(data) {
                         registrations = registrations.concat(data);
 
                         // create dictionary of members with registered lessons

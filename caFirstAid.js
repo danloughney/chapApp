@@ -41,10 +41,6 @@ function contactHTML(data, fieldName, label) {
     return '';
 }
 
-function formatTableRow(data, name, field) {
-    return '<tr><td width="10%" align="left" valign="top">%s</td><td>%s</td></tr>'.format(name, fieldValue(data, field));
-}
-
 document.addEventListener("DOMContentLoaded", function() {
     $.pageOpen(function(data) {
         
@@ -98,7 +94,6 @@ document.addEventListener("DOMContentLoaded", function() {
         document.getElementById('timestamps').innerHTML = formatTableRow(data, 'Morning', TripCheckInMorning) + 
                                                             formatTableRow(data, 'Lesson', TripCheckInLesson) +
                                                             formatTableRow(data, 'Lunch', TripCheckInLunch) +
-                                                            formatTableRow(data, 'Testing', TripCheckInTesting) +
-                                                            formatTableRow(data, 'Depart', TripCheckInDepart)
+                                                            formatTableRow(data, 'Testing', TripCheckInTesting);
     });
 });

@@ -135,6 +135,7 @@ function todaysRegistrations(completion) {
 }
 
 document.addEventListener("DOMContentLoaded", function() {
+    $.spinner = new Spinner(spinOpts).spin(document.body);
     $.listName = $.urlParam('name');
     $.seatID = $.urlParam('seatID');
     $.busNumber = $.urlParam('bus');
@@ -172,6 +173,7 @@ document.addEventListener("DOMContentLoaded", function() {
                     if (pendingRequests == 0) {
                         document.getElementById('listResults').innerHTML = '';
                         renderResults(contacts, formatRegistration, withIndexAlpha);
+                        $.spinner.stop();
                         console.log('finished query', new Date() - startTs);
                     }
                 }
@@ -206,6 +208,7 @@ document.addEventListener("DOMContentLoaded", function() {
                         }
                         renderResults(registrations, formatRegistrationCheckin, withIndexAlpha);
                         console.log('finished query', new Date() - startTs);
+                        $.spinner.stop();
                     }
                 }
 
@@ -279,11 +282,12 @@ document.addEventListener("DOMContentLoaded", function() {
 
                                 html += '</table>';
                                 document.getElementById('listResults').innerHTML = html;
-
                                 console.log('finished query', new Date() - startTs);
+                                $.spinner.stop();
                             },
                             error: function (data, textStatus, jqXhr) {
                                 console.log(textStatus);
+                                $.spinner.stop();
                             }
                         });
                     });

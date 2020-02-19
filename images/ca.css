@@ -2,7 +2,6 @@
   background-color: #2b475b; /* Blue background */
   border: none; /* Remove borders */
   color: white; /* White text */
-  font-size: 18px; /* Set a font size */
   cursor: pointer; /* Mouse pointer on hover */
   border-radius: 4px;
   height: 2em;
@@ -16,7 +15,6 @@
   background-color: lightgray; /* Blue background */
   border: none; /* Remove borders */
   color: white; /* White text */
-  font-size: 18px; /* Set a font size */
   cursor: pointer; /* Mouse pointer on hover */
   border-radius: 4px;
   height: 2em;
@@ -30,7 +28,6 @@
     background-color:#f44336; /* Red background */
     border: none; /* Remove borders */
     color: white; /* White text */
-    font-size: 18px; /* Set a font size */
     cursor: pointer; /* Mouse pointer on hover */
     border-radius: 4px;
     height: 2em;
@@ -44,7 +41,6 @@
     background-color:#6b6666; /* Red background */
     border: none; /* Remove borders */
     color: white; /* White text */
-    font-size: 18px; /* Set a font size */
     cursor: pointer; /* Mouse pointer on hover */
     border-radius: 4px;
     height: 2em;
@@ -64,13 +60,11 @@
 }
 
 .labelBad {
-  font-size: 20px;
   color: #f44336;
   font-weight: bold;
 }
 
 .normalText { 
-  font-size: 20px;
   color: black;
   vertical-align: top;
 }
@@ -186,6 +180,6 @@ input:disabled {
 }
 
 * {
-  font-size: 103%;
+  font-size: 102%;
   font-family: Arial;
  }

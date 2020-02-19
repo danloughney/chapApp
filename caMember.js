@@ -4,9 +4,30 @@
 * main member administration page
 */
 
-
 document.addEventListener("DOMContentLoaded", function() {
-    $.pageOpen();
+    $.pageOpen(function(contact) {
+        if (fieldValue2($.data, fieldCellPhone) == '') {
+            disableButton('callMember');
+            disableButton('txtMember');
+        }
+
+        if (contact.MembershipLevel.Name == 'Chaperone') {
+            disableButton('lunchButton');
+            disableButton('testingButton');
+            disableButton('evaluationButton');
+            disableButton('changeLessonButton');
+            disableButton('checkinLessonButton');
+        }
+
+        document.getElementById('timestamps').innerHTML = 
+            formatTableRow(contact, 'Morning', TripCheckInMorning) + 
+            formatTableRow(contact, 'Lesson', TripCheckInLesson) +
+            formatTableRow(contact, 'Lunch', TripCheckInLunch) +
+            formatTableRow(contact, 'Testing', TripCheckInTesting) +
+            formatTableRow(contact, 'Notes', TripChapNotes) + 
+            formatTableRow(contact, 'Injuries', TripInjuryNotes) +
+            formatTableRow(contact, 'Violations', TripViolationNotes);
+    });
 });
 
 
@@ -25,6 +46,11 @@ function call(numberType) {
             FLSCcall(fieldValue($.data, fieldCellPhone));
             break;
     }
+    return false;
+}
+
+function txtQR() {
+    FLSCsms(fieldValue($.data, fieldCellPhone), 'Tap here to open your FLSC page. https://foxlaneskiclub.wildapricot.org/me');
     return false;
 }
 

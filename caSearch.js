@@ -140,6 +140,7 @@ class SavedSearch {
     }
 
     executeAndRender(elementID, summaryElementID) {
+        //$.spinner.spin(document.body);
         var _this = this;
         var startTs = new Date();
 
@@ -162,9 +163,11 @@ class SavedSearch {
             success: function (data, textStatus, jqXhr) {
                 _this.renderResults(data.Contacts, elementID, summaryElementID);
                 console.log('finished query ' + this.name, new Date() - startTs);
+                $.spinner.stop();
             },
             error: function (data, textStatus, jqXhr) {
                 document.getElementById(elementID).innerHTML = html = 'failed getting search result: ' + textStatus;
+                $.spinner.stop();
             }
         });
     }
@@ -311,14 +314,14 @@ function lessonRegistrationFormatter(contact) {
     var busNumber = fieldValue(contact, TripBusNumber);
     if (busNumber != undefined && busNumber != '') {
         return "<tr><td><a href='%s'>%s, %s</a><br>Bus %s Seat %s<br>%s</td></tr>".format(
-            memberHome(contact.Id), 
+            checkInURL(pageLesson, contact.Id), 
             contact.LastName, contact.FirstName, 
             fieldValue(contact, TripBusNumber), fieldValue(contact, TripBusSeat),
             fieldValue(contact, TripConfirmedLesson)
         );    
     }
     return "<tr><td><a href='%s'>%s, %s</a><br>%s</td></tr>".format(
-        memberHome(contact.Id), 
+        checkInURL(pageLesson, contact.Id), 
         contact.LastName, contact.FirstName, 
         fieldValue(contact, TripConfirmedLesson)
     );
@@ -747,13 +750,13 @@ function busReportHTML(buses) {
     }
 
     var html = '<fieldset><legend>Ticket Summary</legend><table width="100%">' + 
-                '<tr><td width="20%">Total Tickets</td><td>%s</td></tr>'.format(totals.total) + 
+                '<tr><td width="40%">Total Tickets</td><td>%s</td></tr>'.format(totals.total) + 
                 '<tr><td>Students + Sibs</td><td>%s</td></tr>'.format(totals.students + totals.siblings) + 
                 '<tr><td>Chaperones</td><td>%s</td></tr>'.format(totals.chaperones) + 
                 '</table></fieldset><br>';
 
     html += '<fieldset><legend>Lesson Summary</legend><table width="100%">' +
-            '<tr><td width="20%">Total Lessons</td><td>%s</td></tr>'.format(totals.totalLessons);
+            '<tr><td width="40%">Total Lessons</td><td>%s</td></tr>'.format(totals.totalLessons);
     
     var keys = Object.keys(totals.lessons).sort();
     for (var i = 0; i < keys.length; i++) {

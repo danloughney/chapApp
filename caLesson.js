@@ -86,6 +86,8 @@ function lessonIdfromLabel(lessonLabel) {
 }
 
 function execute() {
+    $.spinner.spin(document.body);
+    
     // read the radio buttons for the selected 
     var newLessonRadio = document.getElementsByName('newLesson');
     var selectedLessonLabel = '';

@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', function(){
 });
 
 function executeCheckIn() {
-        checkIn($.checkInType, document.getElementById("notes").value, undefined);
+    checkIn($.checkInType, document.getElementById("notes").value, undefined);
 }
 
 function checkIn(checkInType, notes) {
@@ -21,11 +21,15 @@ function checkIn(checkInType, notes) {
         switch(rc) {
             case 1:
                 if (confirm("WARNING: %s %s is ALREADY checked in for %s. Do you want to check in AGAIN?".format($.data.FirstName, $.data.LastName, $.checkInType))) {
+                    $.spinner.spin(document.body);
+                    disableButton('checkInButton');
                     FLSCcheckIn($.api, $.memberID, checkInType, notes);
                 }
                 break;
             case 0:
                 // don't prompt to confirm check in
+                $.spinner.spin(document.body);
+                disableButton('checkInButton');
                 FLSCcheckIn($.api, $.memberID, checkInType, notes);
                 break;
             case -1:

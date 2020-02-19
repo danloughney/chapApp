@@ -33,6 +33,8 @@ function onChangeBusNumber() {
     var busNumber = document.querySelector('input[name="busNumber"]:checked').value;
     setCookie('busNumber', busNumber, 1);
 
+    $.spinner = new Spinner(spinOpts).spin(document.body);
+        
     clearAllCells();
     executeQuery(busNumber);
     executeDetentionQuery(busNumber);
@@ -143,9 +145,10 @@ function executeQuery(busNumber) {
                 students, students == 1 ? '' : 's',
                 siblings, siblings == 1 ? '' : 's',
                 chaperones, chaperones == 1 ? '' : 's');
+                $.spinner.stop();
         },
         error: function (data, textStatus, jqXhr) {
-            ;
+            $.spinner.stop();
         }
     });
 
@@ -221,7 +224,8 @@ function renderRow(rowType, rowNumber, className) {
 
 document.addEventListener("DOMContentLoaded", function() {
     $.listName = 'Trip Report';
-
+    $.spinner = new Spinner(spinOpts).spin(document.body);
+    
     // read the bus number from the cookie
     var busNumber = getCookie('busNumber') || '1';
     var cell = document.getElementById('busNumber'+busNumber);
@@ -245,6 +249,7 @@ document.addEventListener("DOMContentLoaded", function() {
     // fill table with data
     $.api = new WApublicApi(FLSCclientID);
     $.when($.api.init()).done(function() {
+        
         executeQuery(busNumber);
         executeDetentionQuery(busNumber);
         executeMountainTestQuery(busNumber);

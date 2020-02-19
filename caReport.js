@@ -83,6 +83,8 @@ function saveText() {
     }
 
     if (confirm('Ready to submit this %s?'.format($.reportName))) {
+        $.spinner.spin(document.body);
+        disableButton('submitButton');
         FLSCactionReportNote($.api, $.memberID, text, $.reportType, $.reportName);
     }
 }

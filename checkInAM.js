@@ -120,6 +120,7 @@ function executeCheckIn() {
 }
 
 function checkInAM (busNumber, seatNumber, lessonOption, notes, skipBack2) {
+    
     // check if seat is already checked in
     FLSCisSeatAlreadyTaken($.api, busNumber, seatNumber, function(data) {
         if (data.Contacts.length != 0) {
@@ -135,12 +136,16 @@ function checkInAM (busNumber, seatNumber, lessonOption, notes, skipBack2) {
                 case 1:
                     if (confirm("WARNING: %s %s is ALREADY checked in for %s. Do you want to check in AGAIN?".format($.data.FirstName, $.data.LastName, $.checkInType))) {
                         // WAcheckInTrip($.api, $.memberID, $.eventID);
+                        $.spinner.spin(document.body);
+                        disableButton('checkInButton');
                         FLSCcheckInAM($.api, $.memberID, busNumber, seatNumber, lessonOption, notes, skipBack2); 
                     }
                     break;
                 case 0:
                     if (confirm("Do you want to check in %s %s in Seat %s on Bus %s?".format($.data.FirstName, $.data.LastName, seatNumber, busNumber))) {
                         // WAcheckInTrip($.api, $.memberID, $.eventID);
+                        $.spinner.spin(document.body);
+                        disableButton('checkInButton');
                         FLSCcheckInAM($.api, $.memberID, busNumber, seatNumber, lessonOption, notes, skipBack2);
                         
                     }

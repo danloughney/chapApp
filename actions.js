@@ -121,6 +121,7 @@ function appendMemberName(text) {
 
 $.pageOpen = function(callback) {
     // render the initial page with all selected member data
+    $.spinner = new Spinner(spinOpts).spin(document.body);
     
     $.api = new WApublicApi(FLSCclientID);
     $.memberID = $.urlParam("ID");
@@ -173,6 +174,7 @@ $.pageOpen = function(callback) {
                 }
 
                 var profilePhotoCell = document.getElementById("profilePhoto");
+                var photoOK = true;
                 if (profilePhotoCell) {
                     var photoValue = fieldValue(data, FLSCphoto);
                     if (photoValue) {
@@ -182,10 +184,19 @@ $.pageOpen = function(callback) {
                             dataType: "text",
                             success: function(photoData, textStatus, jqXhr) {
                                 document.getElementById('profilePhoto').src = 'data:image;base64,' + photoData;
-                                //document.getElementById('profilePhoto').addEventListener('click', goMemberHome);
+                            },
+                            error: function(data, textStatus, jqXhr) {
+                                photoOK = false;    
                             } 
                         });       
+                    } else {
+                        photoOK = false;
                     }
+                } else {
+                    photoOK = false;
+                }
+                if (!photoOK) {
+                    document.getElementById('profilePhoto').src = '/Resources/Images/noPhoto.svg';
                 }
 
                 var membershipLevel = data.MembershipLevel.Name;
@@ -220,10 +231,12 @@ $.pageOpen = function(callback) {
                     if (callback) {
                         callback(data);
                     }
+                    $.spinner.stop();
                 });
             },
             error: function (jqXHR, textStatus, errorThrown) {
                 document.getElementById("memberName").innerHTML = "Unknown memberID [" + $.memberID + "]";
+                $.spinner.stop();
             }
         });
         return false;

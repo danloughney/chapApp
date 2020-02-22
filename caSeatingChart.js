@@ -47,14 +47,16 @@ function executeDetentionQuery(busNumber) {
     $.api.apiRequest({
         apiUrl: $.api.apiUrls.contacts({ '$filter' : "'Status' eq 'Active' AND 'TripBusNumber' eq '%s' AND 'TripCheckInMorning' ne NULL".format(busNumber) }),
         success: function (data, textStatus, jqXhr) {
-            var html = '<br><table>';
+            var html = '<label class="labelBad">Detentions</label><br><table>';
+            var detentionCount = 0;
             for (var i = 0; i < data.Contacts.length; i++) {
                 var detention = fieldValue(data.Contacts[i], 'Detention?');
                 if (detention && detention.Id == detentionRequired) {
+                    detentionCount ++;
                     html += detentionFormatter(data.Contacts[i]);
                 }
             }
-            if (data.Contacts.length > 0) {
+            if (detentionCount > 0) {
                 html += '</table>';
                 document.getElementById('detentionList').innerHTML = html;
             }
@@ -209,7 +211,7 @@ function renderRow(rowType, rowNumber, className) {
         <th align="center" width="5%">%s</th> \
         <%s class="%s" width="20%" id="%s"></%s> \
         <%s class="%s" width="20%" id="%s"></%s> \
-        <%s width="5%">&nbsp;</%s> \
+        <%s width="3%">&nbsp;</%s> \
         <%s class="%s" width="20%" id="%s"></%s> \
         <%s class="%s" width="20%" id="%s"></%s> \
         </tr>'.format(
@@ -249,7 +251,6 @@ document.addEventListener("DOMContentLoaded", function() {
     // fill table with data
     $.api = new WApublicApi(FLSCclientID);
     $.when($.api.init()).done(function() {
-        
         executeQuery(busNumber);
         executeDetentionQuery(busNumber);
         executeMountainTestQuery(busNumber);

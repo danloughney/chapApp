@@ -4,9 +4,9 @@
 * custom saved searches
 */
 
-const withIndexNone = 0;
-const withIndexAlpha = 1;
-const withIndexLesson = 2;
+const withIndexNone = 1;
+const withIndexAlpha = 2;
+const withIndexLesson = 3;
 
 class SavedSearch {
     constructor(params) { 
@@ -17,14 +17,14 @@ class SavedSearch {
               counter = '$counter',
               selector = '$selector',
               sorter = '$sorter',
-              index = '$index',
+              indexer = '$index',
               formatter = '$formatter',
               includeFn = '$includeFn',
               summaryFn = '$summaryFn',
               href = '$href';
     
         const validParams = [
-            name, entity, help, filter, counter, selector, sorter, formatter, includeFn, summaryFn, index, href,
+            name, entity, help, filter, counter, selector, sorter, formatter, includeFn, summaryFn, indexer, href,
         ];
 
         this.params = params;
@@ -48,7 +48,7 @@ class SavedSearch {
         this.filter    = params[filter];
         this.counter   = params[counter];
         this.selector  = params[selector] || selectBasicFields;
-        this.index     = params[index] || withIndexAlpha;
+        this.indexer   = params[indexer] || withIndexAlpha;
         this.sorter    = params[sorter] || sortAlphabetically;
         this.includeFn = params[includeFn] || function() { return true;};
         this.summaryFn = params[summaryFn] || function() { return ''; };
@@ -99,7 +99,7 @@ class SavedSearch {
             }
             if (this.includeFn(contacts[i]) == true) {
                 $.resultCount ++;
-                switch(this.index) {
+                switch(this.indexer) {
                     case withIndexNone:
                         break;
     
@@ -125,7 +125,7 @@ class SavedSearch {
             }
        }
     
-       if (this.index != withIndexNone) {
+       if (this.indexer != withIndexNone) {
             var indexHtml = ''; 
             for (var i = 0;i<labelList.length; i++) {
                 indexHtml += '<a href="#%s">%s</a><br>'.format(labelList[i], labelList[i]);
@@ -177,6 +177,110 @@ class SavedSearch {
     }
 }
 
+function eventDescription(event) {
+    switch (event) {
+        case TripCheckInMorning:
+            return "AM Check In";
+
+        case TripCheckInLunch:
+            return "Lunch Check In";
+
+        case TripCheckInLesson:
+            return "Lesson Check In";
+
+        case TripCheckInTesting:
+            return "Testing Check In";
+
+        case TripViolationNotes:
+        case TripViolationDate:
+            return "Violation";
+
+        case TripTestDate:
+            return "Tested";
+
+        case TripChapNotes:
+            return "Chap Note"
+
+        case TripInjuryNotes:
+            return "First Aid";
+
+        default:
+            return event;
+    }
+}
+
+class Comment { 
+    constructor(commentType) {
+        this.commentType = commentType;
+        this.ts = '';
+        this.chapName = '';
+        this.text = '';
+        this.memberName = '';
+        this.bus = '';
+    }
+    header() { 
+        return '<tr> <th>Time</th> <th>Event</th> <th>Chap</th> <th>Student</th> <th>Bus</th> <th>Comment</th> </tr>';
+    }
+    html() {
+        return '<tr> <td>%s</td> <td>%s</td> <td>%s</td> <td>%s</td> <td>%s</td> <td>%s</td> </tr>'.format(
+                this.ts.replace(($.todayOverride || new Date().toJSON().slice(0,10)), ''), 
+                eventDescription(this.commentType), 
+                this.chapName, 
+                this.memberName, 
+                this.bus, 
+                this.text
+            );
+    }
+}
+
+const sortComments = function(a, b) {
+    if (a == undefined && b != undefined) {
+        return -1;
+    } 
+    if (a != undefined && b == undefined) { 
+        return 1;
+    }
+    if (a == undefined && b == undefined) {
+        return 0;
+    }
+    var x = '%s|%s'.format(a.ts, a.commentType).toLowerCase();
+    var y = '%s|%s'.format(b.ts, b.commentType).toLowerCase();
+    return x < y ? -1 : x > y ? 1 : 0;
+};
+
+function parseComments(commentType, noteText) {
+    // parses noteText "ts | chapName<br>text<br>..." into multiple Comment objects
+    var noteEnd = 0;
+    var comments = [];
+    do {
+        var comment = new Comment(commentType);
+        comments.push(comment);
+
+        noteEnd = noteText.indexOf('|');
+        comment.ts = noteText.substring(0, noteEnd - 1);
+        
+        noteText = noteText.substring(noteEnd + 2);
+
+        noteEnd = noteText.indexOf('<br>'); 
+        if (noteEnd == -1) {
+            // end of comment, no text
+            comment.chapName = noteText;
+            return comments;
+        }
+        
+        comment.chapName = noteText.substring(0, noteEnd);
+        
+        noteText = noteText.substring(noteEnd + 4);
+
+        noteEnd = noteText.indexOf('<br><br>');
+        comment.text = noteText.substring(0, noteEnd);
+
+        noteText = noteText.substring(noteEnd + 8);
+    } while(noteText.length > 0);
+
+    return comments;
+}
+
 class BusReport {
     constructor(busNumber) {
         this.busNumber = busNumber;
@@ -187,6 +291,7 @@ class BusReport {
         this.lessons = { };
         this.totalLessons = 0;
         this.testedContacts = [ ];
+        this.comments = [ ];
     }
 
     addLesson(lessonName) {
@@ -207,6 +312,10 @@ class BusReport {
         this.testedContacts.push(contact);
     }
 
+    addComment(comment) {
+        this.comments.push(comment);
+    }
+
     add(busReport) {
         this.total += busReport.total;
         this.students += busReport.students;
@@ -215,6 +324,9 @@ class BusReport {
 
         this.testedContacts = this.testedContacts.concat(busReport.testedContacts);
         this.testedContacts = this.testedContacts.sort(sortByPassFailAlpha);
+
+        this.comments = this.comments.concat(busReport.comments);
+        this.comments = this.comments.sort(sortComments);
 
         for (var lessonName in busReport.lessons) {
             this.totalLessons += busReport.lessons[lessonName];
@@ -514,7 +626,7 @@ const searchTestingEvaluation = new SavedSearch({
     '$filter' : "('Status' eq 'Active' AND 'TripCheckInTesting' ne NULL AND 'TripTestDate' eq NULL)", 
     '$sorter' : sortByTestingCheckin, 
     '$formatter' : testingFormatter,
-    '$index' : withIndexNone
+    '$index' : withIndexNone,
 });
 
 const searchTestingResults = new SavedSearch({
@@ -626,10 +738,6 @@ const searchTripReport = new SavedSearch({
         for (var i = 0; i < contacts.length; i++) {
             var contact = contacts[i];
             
-            if (fieldValue(contact, TripTestDate) == ($.todayOverride || new Date().toJSON().slice(0,10))) {
-                busReport.addTested(contact);
-            }
-
             if (fieldValue(contact, TripBusNumber) == bus) {
                 busReport.total ++;
 
@@ -647,6 +755,23 @@ const searchTripReport = new SavedSearch({
                         console.log('incorrect membership level', contact.MembershipLevel.Name);
                 }
 
+                const noteTypes = [TripChapNotes, TripViolationNotes, TripInjuryNotes];
+                for (var k = 0; k < noteTypes.length; k++) {
+                    var notes = fieldValue2(contact, noteTypes[k]);
+                    if (notes != '') { 
+                        var comments = parseComments(noteTypes[k], notes);
+                        for (var l = 0; l < comments.length; l++) {
+                            comments[l].memberName = contact.LastName + ', ' + contact.FirstName;
+                            comments[l].bus = fieldValue(contact, TripBusNumber);
+                            busReport.addComment(comments[l]);
+                        }
+                    }
+                }
+                
+                if (fieldValue(contact, TripTestDate) == ($.todayOverride || new Date().toJSON().slice(0,10))) {
+                    busReport.addTested(contact);
+                }
+    
                 var lessonName = fieldValue(contact, TripConfirmedLesson);
                 busReport.addLesson(lessonName);
 
@@ -749,36 +874,49 @@ function busReportHTML(buses) {
         totals.add(buses[i]);
     }
 
-    var html = '<fieldset><legend>Ticket Summary</legend><table width="100%">' + 
-                '<tr><td width="40%">Total Tickets</td><td>%s</td></tr>'.format(totals.total) + 
+    var html = '<b>Ticket Summary</b><br><table cellpadding="5" width="100%">' + 
+                '<tr><td width="20%">Total Tickets</td><td>%s</td></tr>'.format(totals.total) + 
                 '<tr><td>Students + Sibs</td><td>%s</td></tr>'.format(totals.students + totals.siblings) + 
                 '<tr><td>Chaperones</td><td>%s</td></tr>'.format(totals.chaperones) + 
-                '</table></fieldset><br>';
+                '</table><br>';
 
-    html += '<fieldset><legend>Lesson Summary</legend><table width="100%">' +
-            '<tr><td width="40%">Total Lessons</td><td>%s</td></tr>'.format(totals.totalLessons);
+    html += '<b>Lesson Summary</b><br><table width="100%" cellpadding="5">' +
+            '<tr><td width="20%">Total Lessons</td><td>%s</td></tr>'.format(totals.totalLessons);
     
     var keys = Object.keys(totals.lessons).sort();
     for (var i = 0; i < keys.length; i++) {
         html += '<tr><td>%s</td><td>%s</td></tr>'.format(keys[i], totals.lessons[keys[i]]);
     }
-    html += '</table></fieldset><br>';
+    html += '</table><br>';
 
-    html += '<fieldset><legend>Bus Summary</legend><table width="100%" align="center">' +
+    html += '<b>Bus Summary</b><br><table width="100%" cellpadding="5" align="center">' +
             '<tr align="center"><td width="10%">By Bus</td><td width="20%">Total</td><td width="20%">Students & Sibs</td><td width="20%">Chaps</td><td width="20%">Lessons</td></tr>';
     for (var i = 0; i < buses.length; i++) {    
         html += '<tr align="center"><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>'.format(i+1, buses[i].total, buses[i].students+buses[i].siblings, buses[i].chaperones, buses[i].totalLessons);
     }
-    html += '</table></fieldset>';
+    html += '</table><br>';
 
-    html += '<fieldset><legend>Testing Summary</legend><table width="100%" align="center">' +
+    html += '<b>Testing Summary</b><br><table width="100%" cellpadding="5" align="center">' +
         '<tr align="center"><td width="10%">MemberID</td><td width="20%">Name</td><td width="20%">Pass/Fail</td></tr>';
     
         for (i = 0; i < totals.testedContacts.length; i++) {
             html += '<tr align="center"><td width="10%">%s</td><td width="20%">%s</td><td width="20%">%s</td></tr>'.format(totals.testedContacts[i].Id,  FLSCformatMemberName(totals.testedContacts[i]), passFail(fieldValue(totals.testedContacts[i], ProficiencyField)));
         }
-    html += '</table></fieldset>';
+    html += '</table><br>';
 
+    html += '<b>Notes</b><br><table width="100%" cellpadding="5">';    
+    for (i = 0; i < totals.comments.length; i++) {
+        if (i == 0) {
+            html += totals.comments[i].header();
+        }
+        html += totals.comments[i].html();
+    }
+    html += '</table>'; 
+
+    const style='style="font-size: 95%;border: 1px solid black; border-collapse: collapse;cell-"';
+    html = html.replace(/<table /g, '<table %s'.format(style))
+        .replace(/<th/g, '<th %s'.format(style))
+        .replace(/<td/g, '<td %s'.format(style));
 
     html += '<p>&nbsp;<p><label class="labelBad">Detentions</label>';
     return html;

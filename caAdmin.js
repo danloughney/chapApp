@@ -74,44 +74,6 @@ function changedLessonReport() {
     window.location.href='/caList?name=Lesson Changes';
 }
 
-function eventDescription(event) {
-    switch (event) {
-        case TripCheckInMorning:
-            return "Morning Check In";
-
-        case TripCheckInLunch:
-            return "Lunch Check In";
-
-        case TripCheckInLesson:
-            return "Lesson Check In";
-
-        case TripCheckInTesting:
-            return "Testing Check In";
-
-        case TripViolationDate:
-            return "Violations";
-
-        case TripTestDate:
-            return "Tested";
-
-        default:
-            return event;
-    }
-}
-
-
-class Audit {
-    constructor(name, event, ts, bus) {
-        this.name = name;
-        this.event = event;
-        this.ts = ts;
-        this.bus = bus || '';
-    }
-    html() {
-        return '<tr><td width="40%">%s</td><td width="25%">%s</td><td width="25%">%s</td><td width="25%">%s</td></tr>'.format(this.ts, this.event, this.name, this.bus);
-    }
-}
-// add firstaid link to the app (on top)
 
 const sortAudits = function(a, b) {
     if (a == undefined && b != undefined) {
@@ -124,8 +86,8 @@ const sortAudits = function(a, b) {
         return 0;
     }
 
-    var x = a.ts;//.toLowerCase();
-    var y = b.ts;//.toLowerCase();
+    var x = a.ts;
+    var y = b.ts;
     return x < y ? -1 : x > y ? 1 : 0;
 };
 
@@ -138,8 +100,9 @@ function tripAudit() {
         TripCheckInLunch,
         TripCheckInLesson,
         TripCheckInTesting,
-        TripViolationDate, 
-        //TripTestDate
+        TripChapNotes,
+        TripInjuryNotes,
+        TripViolationNotes
     ];
 
     var auditLog = [];
@@ -153,19 +116,33 @@ function tripAudit() {
                 for (var j = 0; j < events.length; j++) {
                     var ts = fieldValue(data.Contacts[i], events[j]);
                     var bus = fieldValue(data.Contacts[i], TripBusNumber);
-                    if (ts != undefined && ts != '') {
-                        var audit = new Audit(data.Contacts[i].LastName + ', ' + data.Contacts[i].FirstName, events[j], ts, bus);
-                        auditLog.push(audit);
+                    if (ts != undefined && ts != '') {                        
+                        var comments = parseComments(events[j], fieldValue(data.Contacts[i], events[j]));
+                        for (var k = 0; k < comments.length; k++) {
+
+                            comments[k].memberName = data.Contacts[i].LastName + ', ' + data.Contacts[i].FirstName
+                            comments[k].bus = bus;
+                            auditLog.push(comments[k]);
+                        }
                     }
                 }
             }
 
             auditLog = auditLog.sort(sortAudits);
+
             var html = '<table width="100%">';
+            const style='style="font-size: 95%;border: 1px solid black; border-collapse: collapse;"';
+
             for (i = 0; i < auditLog.length; i++) {
+                if (i == 0) {
+                    html += auditLog[i].header();
+                }
                 html += auditLog[i].html();
             }
-            html += '</table>';
+            html += '</table>';  
+            html = html.replace(/<table /g, '<table %s'.format(style))
+                        .replace(/<th/g, '<th %s'.format(style))
+                        .replace(/<td/g, '<td %s'.format(style));
 
             document.getElementById('outputText').innerHTML = html;
 

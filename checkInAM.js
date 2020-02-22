@@ -32,6 +32,11 @@ function enableButton() {
 
 
 function openCallback(memberData) {
+
+    if (memberData.MembershipLevel.Name == 'Chaperone') {
+        disableButton('changeLessonButton');
+    }
+
     $.CIR = new CheckInReady();
     if ($.memberID) $.CIR.memberID = true;
 
@@ -53,7 +58,7 @@ function openCallback(memberData) {
 
 function seatFromID(seatID) {
     var id = parseInt(seatID);
-    var row = Math.floor(id / 4)+1;
+    var row = Math.floor((id -1)/ 4)+1;
     switch (id % 4) {
         case 1:
             return '%sA'.format(row.toString().padStart(2, '0'));
@@ -61,7 +66,7 @@ function seatFromID(seatID) {
             return '%sB'.format(row.toString().padStart(2, '0'));
         case 3:
             return '%sC'.format(row.toString().padStart(2, '0'));
-        case 4:
+        case 0:
             return '%sD'.format(row.toString().padStart(2, '0'));
         default:
             return "INVALID SEAT ID %s".format(seatID);

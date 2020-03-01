@@ -139,7 +139,7 @@ class SavedSearch {
         this.renderResultSummary(summaryElementID, contacts);
     }
 
-    executeAndRender(elementID, summaryElementID) {
+    executeAndRender(elementID, summaryElementID, callback) {
         //$.spinner.spin(document.body);
         var _this = this;
         var startTs = new Date();
@@ -150,6 +150,9 @@ class SavedSearch {
                 success: function (data, textStatus, jqXhr) {
                     $.count = data.Count;
                     _this.renderResultSummary(summaryElementID);
+                    if (callback != undefined) {
+                        callback();
+                    }
                     console.log('finished counter query ' + this.name, new Date() - startTs);
                 },
                 error: function (data, textStatus, jqXhr) {
@@ -157,12 +160,18 @@ class SavedSearch {
                 }
             });    
         }
-        var startTs = new Date();
+        
         $.api.apiRequest({
             apiUrl: $.api.apiUrls.contacts({ '$filter' : this.filter }),
             success: function (data, textStatus, jqXhr) {
                 _this.renderResults(data.Contacts, elementID, summaryElementID);
-                console.log('finished query ' + this.name, new Date() - startTs);
+                if (callback != undefined) {
+                    callback();
+                }
+
+                var dur = new Date() - startTs;
+                activityLog(this.name, this.name, dur);
+                console.log('finished query ' + this.name, dur);
                 $.spinner.stop();
             },
             error: function (data, textStatus, jqXhr) {
@@ -671,7 +680,7 @@ const searchCheckedInForLesson = new SavedSearch({
 });
 
 const searchLessonChanges = new SavedSearch({
-    '$name' : 'Lesson Changes', 
+    '$name' : 'Changed Lesson Report', 
     '$help' : 'Report of added or changed lessons',
     '$entity' : 'changedLessons',
     '$filter' : "'TripConfirmedLesson' ne NULL AND 'TripConfirmedLesson' ne ''",
@@ -755,7 +764,7 @@ const searchTripReport = new SavedSearch({
                         console.log('incorrect membership level', contact.MembershipLevel.Name);
                 }
 
-                const noteTypes = [TripChapNotes, TripViolationNotes, TripInjuryNotes];
+                const noteTypes = [TripChapNotes, TripViolationNotes, TripInjuryNotes, TripTestingNotes];
                 for (var k = 0; k < noteTypes.length; k++) {
                     var notes = fieldValue2(contact, noteTypes[k]);
                     if (notes != '') { 

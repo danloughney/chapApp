@@ -15,6 +15,11 @@ function listGroup(name, listName) {
 }
 
 document.addEventListener("DOMContentLoaded", function() {
+    $.api = new WApublicApi(FLSCclientID);
+    $.when($.api.init()).done(function() {
+        activityLog('home');
+    });
+
     var html = '<table width="100%">';
     if (window.innerWidth > 500) {
         // 2 column
@@ -39,7 +44,8 @@ document.addEventListener("DOMContentLoaded", function() {
 
     document.getElementById('section2').innerHTML = listGroup('Lessons', [
         searchLessonCheckIn, 
-        searchCheckedInForLesson
+        searchCheckedInForLesson,
+        searchLessonChanges
     ]);
     
     document.getElementById('section3').innerHTML = listGroup('Lunch', [

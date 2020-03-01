@@ -77,6 +77,14 @@
   cursor: pointer;
 }
 
+.help-btn {
+  display: inline-block;
+  height: 3em;
+  width: 3em;
+  background: url(help.svg) 50% 50% no-repeat;
+  cursor: pointer;
+}
+
 .phone-btn {
   display: inline-block;
   height: 3em;

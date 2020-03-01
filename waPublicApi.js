@@ -173,6 +173,14 @@ function WApublicApi(clientId) {
         },
         savedSearch: function(searchId) {
             return this.account() + '/savedsearches/' + searchId;
+        },
+        memberGroups: function(params) {
+            params = params || {};
+            var result = this.account() + '/membergroups';
+            return result + "?" + $.param(params);
+        },
+        memberGroup: function(groupId) { 
+            return this.account() + '/membergroups/' + groupId;
         }
     };
  

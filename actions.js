@@ -20,7 +20,9 @@ const TripDetentionFlag = 'Detention?';
 const TripDetentionNotes = 'Detention Explanation';
 const ProficiencyField = 'Proficiency Test Pass?'; 
 const TripTestDate = 'TripTestDate';
+const TripChapActivity = "TripChapActivity";
 const TripBusCaptain = 'TripBusCaptain';
+const TripTestingNotes = 'TripTestingNotes';
 
 const fieldCellPhone = "Cell Phone";
 const detentionRequired = 12555903;
@@ -95,7 +97,6 @@ function sgGetChapInfo() {
             $.chapName = FLSCformatChapName(chapData);
             $.chapID = chapData.Id;
             $.busCaptain = fieldValue(chapData, TripBusNumber);
-            console.log('got chap info');
         }
     });
 }
@@ -372,31 +373,6 @@ function FLSCactionReportNote(api, memberID, text, reportType, reportName) {
     );
 }
 
-/*
-function FLSCactionReportInjury(api, memberID, injury) {
-    if (injury == undefined || injury == '') {
-        console.log('no injury to report');
-        return;
-    }
-
-    injury = FLSCformatComment(fieldValue($.data, TripInjuryNotes), injury, $.chapName);
-    var fieldValues = [
-        { fieldName: TripInjuryNotes, value: injury },
-        { fieldName: TripInjuryDate, value: FLSCformatDate(new Date()) }
-    ];
-
-    FLSCputMemberData(api, memberID, fieldValues, 
-        function(fieldValues, textStatus) {
-            FLSCwindowAlert('Injury reported');
-            FLSCwindowBack();
-        },
-        function(fieldValues, textStatus) {
-            FLSCwindowAlert('Injury report failed ' + textStatus) + '. Try again';
-        }
-    );
-}
-*/
-
 // check to see if the given check-in type has already happened.
 function FLSChasCheckedIn(api, memberID, checkInType, f) {
     // f is the callback that accepts the result 
@@ -484,6 +460,8 @@ function FLSCresetTripFields(api, memberID, completion, resultCount, outputField
         { fieldName: TripConfirmedLesson, value: null },
         { fieldName: TripBusCaptain, value: null },
         { fieldName: TripConfirmedLesson, value: null },
+        { fieldName: TripChapActivity, value: null },
+        { fieldName: TripTestingNotes, value: null }
     ];
 
     console.log('resetting memberID', memberID);
@@ -511,6 +489,8 @@ const anyUpdateFilter = "'Status' eq 'Active' and (" +
     "('TripViolationDate' ne ''  and 'TripViolationDate' ne NULL) or " + 
     "('TripViolationNotes' ne '' and 'TripViolationNotes' ne NULL) or " + 
     "('TripLastUpdateDate' ne '' and 'TripLastUpdateDate' ne NULL) or " + 
+    "('TripTestingNotes' ne '' and 'TripTestingNotes' ne NULL) or " + 
+    "('TripChapActivity' ne '' and 'TripChapActivity' ne NULL) or " + 
     "('TripTestDate' ne ''       and 'TripTestDate' ne NULL) )";
     
 
@@ -582,8 +562,7 @@ function FLSCresetTripFieldsAll(api, resultCount, outputField) {
 }
 
 var readinessMsg = '';
-function FLSCLessonReadiness(event) {
-    
+function FLSCLessonReadiness(event) {    
     if (event === undefined) {
         readiessMsg += 'WARNING: No event received.';
         return;
@@ -609,7 +588,7 @@ function FLSCLessonReadiness(event) {
         if (lessonOptions == null) {
             readinessMsg += 'WARNING: Event has no lessons. %s<br'.format(event.Name);
         } else {
-            readinessMsg += "OK: Lesson Options has %s choices for %s<br>".format(lessonOptions.AllowedValues.length-1, event.Name);
+            readinessMsg += "NOTE: Lesson Options has %s choices for %s<br>".format(lessonOptions.AllowedValues.length-1, event.Name);
             // for (i = 0; i < lessonOptions.AllowedValues.length; i++) {
             //     readinessMsg
             // }    
@@ -617,6 +596,63 @@ function FLSCLessonReadiness(event) {
     }
     
     readinessMsg += "OK: Event %s<br>".format(event.Name);
+}
+
+var firstAidChapMsg = 'First Aid Chaps:<br>';
+function FLSCFirstAidChapReadiness(completion) {
+    var pendingRequests = 0;
+
+    const chapNameFunction = function(chapId, completion) {
+        $.api.apiRequest({
+            apiUrl: $.api.apiUrls.contact(chapId),  
+            success: function (contact, textStatus, jqXhr) {
+                firstAidChapMsg += 'Chap: %s %s<br>'.format(contact.FirstName, contact.LastName);
+                pendingRequests --;
+                completion() || { };
+            },
+            error: function(data, textStatus, jqXhr) {
+                pendingRequests --;
+                readinessMsg += "failed to query groups";
+                completion() || { };
+            }
+        }); 
+    }
+
+    $.api.apiRequest({
+        apiUrl: $.api.apiUrls.memberGroups({ '$filter' : "'Name' eq "}),  
+        success: function (groups, textStatus, jqXhr) {
+            for (var i = 0; i < groups.length; i++) {
+                if (groups[i].Name == 'First Aid Chaperones') {
+                    $.api.apiRequest({
+                        apiUrl: $.api.apiUrls.memberGroup(groups[i].Id),  
+                        success: function (group, textStatus, jqXhr) {
+                            pendingRequests = group.ContactsCount;
+                            for (var j = 0; j < group.ContactsCount; j++) {
+                                chapNameFunction(group.ContactIds[j], function() {
+                                    if (pendingRequests == 0) {
+                                        readinessMsg += firstAidChapMsg;
+                                        completion() || { };
+                                    }
+                                });
+                            }
+                            return;
+                        },
+                        error: function(data, textStatus, jqXhr) {
+                            readinessMsg += "failed to query groups";
+                            completion() || { };
+                        }
+                    });
+                    break;
+                }
+            }
+        },
+        error: function(data, textStatus, jqXhr) {
+            readinessMsg += "failed to query groups";
+            completion() || { };
+        }
+    });
+
+    //readinessMsg += "OK: Event %s<br>".format(event.Name);
 }
 
 function FLSCTripReadiness(api, tripDate, outputField) {
@@ -675,8 +711,11 @@ function FLSCTripReadiness(api, tripDate, outputField) {
                                 FLSCLessonReadiness(event);
                                 getCurrentEvent(api, todaysEvents[2].Id, function(event) {
                                     FLSCLessonReadiness(event);
-                                    readinessMsg += 'Done<br>';
-                                    document.getElementById(outputField).innerHTML = readinessMsg;
+
+                                    FLSCFirstAidChapReadiness(function() {
+                                        readinessMsg += 'Done<br>';
+                                        document.getElementById(outputField).innerHTML = readinessMsg;    
+                                    });
                                 })
                             });
                         });           
@@ -752,6 +791,44 @@ function getCurrentEvent(api, eventID, callback) {
         error: function (data, textStatus, jqXhr) {
             callback(undefined);
             //document.getElementById('listResults2').innerHTML = html = 'failed getting search result: ' + textStatus;
+        }
+    });
+}
+
+function activityLog(action, info) {
+    return; // max len is 250 chars
+    
+    var startTs = new Date();
+
+    $.api.apiRequest({
+        apiUrl: $.api.apiUrls.me(),
+        success: function (me, textStatus, jqXhr) {
+            $.api.apiRequest({
+                apiUrl: $.api.apiUrls.contact(me.Id),
+                success: function (chapData, textStatus, jqXhr) {
+                    var fieldValues = [ 
+                        { fieldName:TripChapActivity, value: FLSCformatAudit(
+                                                                fieldValue2(chapData, TripChapActivity), 
+                                                                FLSCformatMemberName(chapData), 
+                                                                action, 
+                                                                info) },
+                    ];
+                    $.api.apiRequest({
+                        apiUrl: $.api.apiUrls.contact(chapData.Id),
+                            method: "PUT",
+                            data: { 
+                                id : chapData.Id,
+                                fieldValues: fieldValues
+                            },
+                            success: function(data, textStatus, jqXhr){
+                                console.log('SUCCESS PUT audit (%sms): %s'.format(this.name, new Date() - startTs, fieldValues[0].value));
+                            },
+                            error: function(data, textStatus, jqXhr) {
+                                console.log('** FAILURE ** PUT audit: ' + fieldValues[0].value);
+                            }
+                    });
+                }
+            });
         }
     });
 }

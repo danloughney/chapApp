@@ -5,8 +5,8 @@
 */
 
 document.addEventListener("DOMContentLoaded", function() {
-    $.api = new WApublicApi(FLSCclientID);
     $.memberID = $.urlParam("ID");
+    $.api = new WApublicApi(FLSCclientID);
     
     $.when($.api.init()).done(function(){
         // alert('ready');
@@ -102,7 +102,8 @@ function tripAudit() {
         TripCheckInTesting,
         TripChapNotes,
         TripInjuryNotes,
-        TripViolationNotes
+        TripViolationNotes,
+        TripTestingNotes,
     ];
 
     var auditLog = [];

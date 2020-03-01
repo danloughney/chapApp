@@ -89,8 +89,6 @@ function saveForm() {
         }
     }
 
-    console.log('values', values);
-
     var fieldValues = [ 
         { fieldName:ProficiencyField, value: values },   
         { fieldName:TripTestDate, value: ($.todayOverride || FLSCformatDate(new Date())) }
@@ -98,8 +96,8 @@ function saveForm() {
     
     var notes = document.getElementById("notes").value;
     if (notes != undefined && notes != '') {
-        notes = FLSCformatComment(fieldValue($.data, TripChapNotes), notes, $.chapName);
-        fieldValues.push({ fieldName: TripChapNotes, value: notes });
+        notes = FLSCformatComment(fieldValue($.data, TripTestingNotes), notes, $.chapName);
+        fieldValues.push({ fieldName: TripTestingNotes, value: notes });
     }
     
     FLSCputMemberData($.api, $.memberID, fieldValues, 
@@ -121,6 +119,7 @@ function resetCertification() {
 
     var fieldValues = [ 
         { fieldName:ProficiencyField, value: [ ] },
+        { fieldName:TripTestingNotes, value: null },
         { fieldName:TripTestDate, value: null },
     ];
         

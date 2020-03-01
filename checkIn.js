@@ -9,7 +9,9 @@ document.addEventListener('DOMContentLoaded', function(){
     $.checkInType = $.urlParam('type');
     document.getElementById('checkInLabel').innerHTML = $.checkInType + ' Check In';
 
-    $.pageOpen();
+    $.pageOpen(function(contact) { 
+        enableButton('checkInButton');
+    });
 });
 
 function executeCheckIn() {

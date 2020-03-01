@@ -12,7 +12,7 @@ const FLSCHotline = '805-635-7669';
 // trip configurations
 const maxRowsPerBus = 16;
 const maxBusesPerTrip = 6;
-$.todayOverride = '2020-02-23'; // '2020-01-18'; //  undefined; // set to undefined for production '2020-03-18';
+$.todayOverride = '2020-03-01'; // '2020-01-18'; //  undefined; // set to undefined for production '2020-03-18';
  
 // field value definitions
 const MembershipLevelChaperone = 1088585;
@@ -194,16 +194,28 @@ function AMPM(hrs) {
 function FLSCformatDate(d /* a date */) {
     // date with chap name indicating who checked in member
     var ts = d.getFullYear() + "-" + ("0"+(d.getMonth()+1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2) + " " +
-         ("0" + d.getHours()).slice(-2) + ":" + ("0" + d.getMinutes()).slice(-2);
-    if ($.chapName != undefined) {
-        return "%s | %s".format(ts, $.chapName);
+         ("0" + d.getHours()).slice(-2) + ":" + ("0" + d.getMinutes()).slice(-2) + ":" + ("0" + d.getSeconds()).slice(-2);
+    
+    return "%s | %s".format(ts, $.chapName || 'unknown chap');
+}
+
+function FLSCformatAudit(currentAudit, chapName, auditEvent, info) {
+    // date | chap | type | info
+    // date2 | chap | type | info
+    var d = new Date();
+    var ts = d.getFullYear() + "-" + ("0"+(d.getMonth()+1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2) + " " +
+         ("0" + d.getHours()).slice(-2) + ":" + ("0" + d.getMinutes()).slice(-2) + ":" + ("0" + d.getSeconds()).slice(-2);
+    
+    if (currentAudit === undefined || currentAudit == '') {
+        return "%s | %s | %s | %s".format(ts, chapName, auditEvent || '', info || '' );
+    } else {
+        return "%s<br>%s | %s | %s | %s".format(currentAudit, ts, chapName, auditEvent || '', info || '' );
     }
-    return ts;
 }
 
 function FLSCformatDateAMPM(d /* a date */) {
     return ("0" + d.getDate()).slice(-2) + "-" + ("0"+(d.getMonth()+1)).slice(-2) + "-" +
-        d.getFullYear() + " " + ("0" + (d.getHours()%12)).slice(-2) + ":" + ("0" + d.getMinutes()).slice(-2) + AMPM(d.getHours());
+        d.getFullYear() + " " + ("0" + (d.getHours()%12)).slice(-2) + ":" + ("0" + d.getMinutes()).slice(-2) + ":" + ("0" + d.getSeconds()).slice(-2) + AMPM(d.getHours());
 }
 
 function FLSCformatName(data) {
@@ -251,7 +263,7 @@ function timedAlert(msg,completion)
         if (completion != undefined) {
             completion();
         }
-    },2000);
+    },1500);
 }
 
 function FLSCwindowAlert(text, completion) {
@@ -326,9 +338,16 @@ function radioSelection(radioName, optionName, onchangeFn) {
 
 function disableButton(elementID) {
     elt = document.getElementById(elementID);
-    elt.disable = true;
+    elt.disabled = true;
     elt.className = "btnInactive";
 }
+
+function enableButton(elementID) {
+    elt = document.getElementById(elementID);
+    elt.disabled = false;
+    elt.className = "btn";
+}
+
 
 function formatTableRow(data, name, field) {
     return '<tr><td width="10%" align="left" valign="top">%s</td><td><b>%s</b></td></tr>'.format(name, fieldValue(data, field));

@@ -174,7 +174,9 @@ document.addEventListener("DOMContentLoaded", function() {
                         document.getElementById('listResults').innerHTML = '';
                         renderResults(contacts, formatRegistration, withIndexAlpha);
                         $.spinner.stop();
-                        console.log('finished query', new Date() - startTs);
+                        var dur = new Date() - startTs;
+                        activityLog($.search.entity, this.name, dur);
+                        console.log('finished query ' + this.name, dur);        
                     }
                 }
                 var contacts = [];//should be registrations
@@ -207,7 +209,9 @@ document.addEventListener("DOMContentLoaded", function() {
                             }
                         }
                         renderResults(registrations, formatRegistrationCheckin, withIndexAlpha);
-                        console.log('finished query', new Date() - startTs);
+                        var dur = new Date() - startTs;
+                        activityLog($.search.entity, this.name, dur);
+                        console.log('finished query ' + this.name, dur);        
                         $.spinner.stop();
                     }
                 }
@@ -282,7 +286,10 @@ document.addEventListener("DOMContentLoaded", function() {
 
                                 html += '</table>';
                                 document.getElementById('listResults').innerHTML = html;
-                                console.log('finished query', new Date() - startTs);
+                                
+                                var dur = new Date() - startTs;
+                                activityLog($.search.entity, this.name, dur);
+                                console.log('finished query ' + this.name, dur);        
                                 $.spinner.stop();
                             },
                             error: function (data, textStatus, jqXhr) {

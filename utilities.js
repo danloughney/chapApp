@@ -12,7 +12,7 @@ const FLSCHotline = '805-635-7669';
 // trip configurations
 const maxRowsPerBus = 16;
 const maxBusesPerTrip = 6;
-$.todayOverride = '2020-03-01'; // '2020-01-18'; //  undefined; // set to undefined for production '2020-03-18';
+$.todayOverride = '2020-03-08'; // '2020-01-18'; //  undefined; // set to undefined for production '2020-03-18';
  
 // field value definitions
 const MembershipLevelChaperone = 1088585;

@@ -48,7 +48,36 @@ function openCallback(memberData) {
     FLSChasCheckedIn($.api, $.memberID, $.checkInType, function(checkedIn) {
         if (!checkedIn) {
             $.CIR.memberChecked = true;
+
+            if ($.seatID == null) {
+                var busNumber = getCookie('busNumber') || '1';
+                if (busNumber == '') busNumber = '1';
+        
+                var cell = document.getElementById('busNumber'+busNumber);
+                cell.checked = true;
+        
+                var row = getCookie('row') || '1';
+                cell = document.getElementById('row').value = row;
+        
+                var seat = getCookie('seat') || 'A';
+                cell = document.getElementById('seat%s'.format(seat)).checked = true;
+            } else {
+                document.getElementById('seatAssignmentDiv').innerHTML = 'Bus %s&nbsp;&nbsp;&nbsp;Seat %s&nbsp;/&nbsp;%s'.format($.busNumber, $.seatID, seatFromID($.seatID));
+            }
+
         } else {
+            var busNumber = fieldValue(memberData, TripBusNumber)
+            var cell = document.getElementById('busNumber'+busNumber);
+            cell.checked = true;
+    
+            var busSeat = fieldValue(memberData, TripBusSeat);
+
+            var row = busSeat.substring(0, 2);
+            cell = document.getElementById('row').value = row;
+
+            var seat = busSeat.substring(2, 3);
+            cell = document.getElementById('seat%s'.format(seat)).checked = true;
+
             alert("WARNING: %s %s is ALREADY checked in for %s.".format($.data.FirstName, $.data.LastName, $.checkInType));
             $.CIR.memberChecked = true;
         }
@@ -81,22 +110,6 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('checkInLabel').innerHTML = $.checkInType + ' Check In';
     
     $.pageOpen(openCallback);
-
-    if ($.seatID == null) {
-        var busNumber = getCookie('busNumber') || '1';
-        if (busNumber == '') busNumber = '1';
-
-        var cell = document.getElementById('busNumber'+busNumber);
-        cell.checked = true;
-
-        var row = getCookie('row') || '1';
-        cell = document.getElementById('row').value = row;
-
-        var seat = getCookie('seat') || 'A';
-        cell = document.getElementById('seat%s'.format(seat)).checked = true;
-    } else {
-        document.getElementById('seatAssignmentDiv').innerHTML = 'Bus %s&nbsp;&nbsp;&nbsp;Seat %s&nbsp;/&nbsp;%s'.format($.busNumber, $.seatID, seatFromID($.seatID));
-    }
 });
 
 function executeCheckIn() {
